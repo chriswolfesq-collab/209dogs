@@ -14,7 +14,9 @@ type Claim = {
 
 type ManagedDog = {
   id: string;
+  listingType: string;
   status: string;
+  dogName: string | null;
   photoUrl: string;
   foundLocation: string;
   foundDate: string;
@@ -82,6 +84,8 @@ export default function ManageDogPage({
       </p>
     );
 
+  const isLost = dog.listingType === "lost";
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <h1 className="mb-1 text-2xl font-semibold">Manage Your Listing</h1>
@@ -93,14 +97,16 @@ export default function ManageDogPage({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={dog.photoUrl}
-          alt="Found dog"
+          alt={isLost ? "Lost dog" : "Found dog"}
           className="h-24 w-24 rounded object-cover"
         />
         <div>
-          <div className="font-medium">{dog.breedGuess || "Unknown breed"}</div>
+          <div className="font-medium">
+            {dog.dogName || dog.breedGuess || "Unknown breed"}
+          </div>
           <div className="text-sm text-black/60">{dog.foundLocation}</div>
           <div className="text-sm text-black/60">
-            Found {new Date(dog.foundDate).toLocaleDateString()}
+            {isLost ? "Last seen" : "Found"} {new Date(dog.foundDate).toLocaleDateString()}
           </div>
           <div className="mt-1 text-sm font-medium capitalize">
             Status: {dog.status.replace("_", " ")}
@@ -128,11 +134,13 @@ export default function ManageDogPage({
       </div>
 
       <h2 className="mb-3 font-semibold">
-        Claims {dog.claims.length > 0 ? `(${dog.claims.length})` : ""}
+        {isLost ? "Sightings" : "Claims"} {dog.claims.length > 0 ? `(${dog.claims.length})` : ""}
       </h2>
 
       {dog.claims.length === 0 ? (
-        <p className="text-sm text-black/60">No one has claimed this dog yet.</p>
+        <p className="text-sm text-black/60">
+          {isLost ? "No one has reported a sighting yet." : "No one has claimed this dog yet."}
+        </p>
       ) : (
         <div className="space-y-3">
           {dog.claims.map((claim) => (

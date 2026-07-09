@@ -8,11 +8,11 @@ export default function Home() {
         <div className="mx-auto grid max-w-5xl items-center gap-10 px-4 py-16 sm:grid-cols-2 sm:py-20">
           <div className="text-center sm:text-left">
             <h1 className="text-4xl font-semibold tracking-tight">
-              Reuniting Stockton&apos;s found dogs with their people
+              Reuniting Stockton&apos;s dogs with their people
             </h1>
             <p className="mt-4 max-w-xl text-lg text-black/60">
-              Found a dog? Post it here in a couple minutes — photo, where
-              you found it, a few details. If someone recognizes their dog,
+              Found a dog, or missing one? Post it here in a couple minutes —
+              photo, location, a few details. If someone recognizes the dog,
               we connect you by email. Your contact info is never shown
               publicly.
             </p>
@@ -25,10 +25,16 @@ export default function Home() {
                 Report a Found Dog
               </Link>
               <Link
+                href="/dogs/report-lost"
+                className="rounded-md border border-black/20 px-6 py-3 font-medium hover:bg-black/5"
+              >
+                Report a Lost Dog
+              </Link>
+              <Link
                 href="/dogs"
                 className="rounded-md border border-black/20 px-6 py-3 font-medium hover:bg-black/5"
               >
-                Browse Found Dogs
+                Browse
               </Link>
             </div>
           </div>
@@ -54,17 +60,17 @@ export default function Home() {
           <Step
             emoji="📸"
             title="Post the dog"
-            body="Add a photo, drop a pin where you found it, and a few details. Takes about two minutes."
+            body="Add a photo, type the location (we'll find it on the map for you), and a few details. Takes about two minutes."
           />
           <Step
             emoji="🗺️"
-            title="Owners browse the map"
-            body="Anyone missing a dog can check the map or list of currently unclaimed dogs across Stockton."
+            title="Everyone browses the map"
+            body="Found dogs, lost dogs, and reunited dogs across Stockton, color-coded on a map and list you can filter."
           />
           <Step
             emoji="💌"
             title="We connect you privately"
-            body="If someone claims the dog, we email you their contact info so you can reach out. Yours stays private the whole time."
+            body="If someone recognizes the dog, we email you their contact info so you can reach out. Yours stays private the whole time."
           />
         </div>
       </div>

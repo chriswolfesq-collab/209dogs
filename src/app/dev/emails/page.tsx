@@ -1,5 +1,6 @@
 "use client";
 
+import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type DevEmail = {
@@ -11,6 +12,10 @@ type DevEmail = {
 };
 
 export default function DevEmailsPage() {
+  if (process.env.NODE_ENV !== "development") {
+    notFound();
+  }
+
   const [emails, setEmails] = useState<DevEmail[]>([]);
   const [loading, setLoading] = useState(true);
 

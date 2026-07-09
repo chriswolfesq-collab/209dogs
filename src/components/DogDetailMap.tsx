@@ -11,7 +11,17 @@ const DogMap = dynamic(() => import("@/components/DogMap"), {
   ),
 });
 
-export default function DogDetailMap({ lat, lng }: { lat: number; lng: number }) {
+export default function DogDetailMap({
+  lat,
+  lng,
+  listingType = "found",
+  status = "active",
+}: {
+  lat: number;
+  lng: number;
+  listingType?: string;
+  status?: string;
+}) {
   return (
     <DogMap
       dogs={[
@@ -21,7 +31,8 @@ export default function DogDetailMap({ lat, lng }: { lat: number; lng: number })
           foundLat: lat,
           foundLng: lng,
           foundLocation: "",
-          status: "active",
+          status,
+          listingType,
         },
       ]}
       height="300px"

@@ -11,7 +11,9 @@ export async function GET(
     where: { manageToken: token },
     select: {
       id: true,
+      listingType: true,
       status: true,
+      dogName: true,
       photoUrl: true,
       foundLocation: true,
       foundDate: true,

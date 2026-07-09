@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import DogList from "@/components/DogList";
 import FilterBar, { EMPTY_FILTERS, Filters } from "@/components/FilterBar";
 import type { DogSummary } from "@/components/DogCard";
@@ -16,22 +17,26 @@ const DogMap = dynamic(() => import("@/components/DogMap"), {
   ),
 });
 
-type Dog = DogSummary & Pick<DogPin, "foundLat" | "foundLng">;
+type Dog = DogSummary & Pick<DogPin, "foundLat" | "foundLng"> & { listingType: string };
+type ViewMode = "split" | "map" | "list";
 
 export default function DogsPage() {
-  const [view, setView] = useState<"map" | "list">("map");
+  const [view, setView] = useState<ViewMode>("split");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
+    if (filters.type) params.set("type", filters.type);
     if (filters.size) params.set("size", filters.size);
     if (filters.color) params.set("color", filters.color);
     if (filters.q) params.set("q", filters.q);
     if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.set("dateTo", filters.dateTo);
+    if (filters.includeReunited) params.set("includeReunited", "1");
     return params.toString();
   }, [filters]);
 
@@ -60,26 +65,35 @@ export default function DogsPage() {
   }, [queryString, startTransition]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Found Dogs in Stockton</h1>
-        <div className="flex rounded-lg border border-black/10 bg-white p-1">
-          <button
-            onClick={() => setView("map")}
-            className={`rounded-md px-3 py-1 text-sm ${
-              view === "map" ? "bg-neutral-900 text-white" : "text-black/60"
-            }`}
+        <h1 className="text-2xl font-semibold">Lost &amp; Found Dogs in Stockton</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dogs/report-lost"
+            className="rounded-md border border-black/20 px-3 py-1.5 text-sm font-medium hover:bg-black/5"
           >
-            Map
-          </button>
-          <button
-            onClick={() => setView("list")}
-            className={`rounded-md px-3 py-1 text-sm ${
-              view === "list" ? "bg-neutral-900 text-white" : "text-black/60"
-            }`}
+            Report a Lost Dog
+          </Link>
+          <Link
+            href="/dogs/new"
+            className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700"
           >
-            List
-          </button>
+            Report a Found Dog
+          </Link>
+          <div className="flex rounded-lg border border-black/10 bg-white p-1">
+            {(["split", "map", "list"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`rounded-md px-3 py-1 text-sm capitalize ${
+                  view === v ? "bg-neutral-900 text-white" : "text-black/60"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -92,9 +106,23 @@ export default function DogsPage() {
       {isPending && dogs.length === 0 ? (
         <p className="py-12 text-center text-black/40">Loading…</p>
       ) : view === "map" ? (
-        <DogMap dogs={dogs} />
-      ) : (
+        <DogMap dogs={dogs} showLegend />
+      ) : view === "list" ? (
         <DogList dogs={dogs} />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="max-h-[70vh] overflow-y-auto pr-1">
+            <DogList
+              dogs={dogs}
+              columns={2}
+              activeId={hoveredId}
+              onHoverDog={setHoveredId}
+            />
+          </div>
+          <div className="lg:sticky lg:top-4 lg:self-start">
+            <DogMap dogs={dogs} height="70vh" showLegend highlightId={hoveredId} />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -61,11 +61,16 @@ export async function POST(
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
   const manageUrl = `${baseUrl}/manage/${dog.manageToken}`;
+  const isLost = dog.listingType === "lost";
 
   await sendEmail({
     to: dog.finderEmail,
-    subject: "Someone thinks they recognize the dog you found",
-    body: `${parsed.data.claimantName} submitted a claim for the dog you posted.\n\nTheir contact info: ${parsed.data.claimantContact}\n\nWhat they said to identify the dog:\n"${parsed.data.proofAnswer}"\n\nReview all claims and manage your listing here:\n${manageUrl}\n\nIf this sounds legit, reach out to them directly. If it doesn't hold up, you can ignore it and wait for other claims.`,
+    subject: isLost
+      ? `Someone may have spotted ${dog.dogName || "your dog"}`
+      : "Someone thinks they recognize the dog you found",
+    body: isLost
+      ? `${parsed.data.claimantName} submitted a sighting for ${dog.dogName || "the dog"} you posted as lost.\n\nTheir contact info: ${parsed.data.claimantContact}\n\nWhat they said:\n"${parsed.data.proofAnswer}"\n\nReview all sightings and manage your listing here:\n${manageUrl}\n\nIf this sounds promising, reach out to them directly.`
+      : `${parsed.data.claimantName} submitted a claim for the dog you posted.\n\nTheir contact info: ${parsed.data.claimantContact}\n\nWhat they said to identify the dog:\n"${parsed.data.proofAnswer}"\n\nReview all claims and manage your listing here:\n${manageUrl}\n\nIf this sounds legit, reach out to them directly. If it doesn't hold up, you can ignore it and wait for other claims.`,
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });

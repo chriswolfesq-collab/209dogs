@@ -19,7 +19,9 @@ export default async function DogDetailPage({
     where: { id },
     select: {
       id: true,
+      listingType: true,
       status: true,
+      dogName: true,
       photoUrl: true,
       foundLat: true,
       foundLng: true,
@@ -37,6 +39,8 @@ export default async function DogDetailPage({
   });
 
   if (!dog) notFound();
+
+  const isLost = dog.listingType === "lost";
 
   const holdingLabel = {
     holding: "Currently with the finder",
@@ -58,7 +62,7 @@ export default async function DogDetailPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={dog.photoUrl}
-            alt="Found dog"
+            alt={isLost ? "Lost dog" : "Found dog"}
             className="w-full rounded-lg border border-black/10 object-cover"
           />
         </div>
@@ -66,28 +70,41 @@ export default async function DogDetailPage({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold">
-              {dog.breedGuess || "Unknown breed"}
+              {dog.dogName || dog.breedGuess || "Unknown breed"}
             </h1>
+            {dog.status === "active" && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  isLost ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+                }`}
+              >
+                {isLost ? "Lost" : "Found"}
+              </span>
+            )}
             {dog.status === "claim_pending" && (
               <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
                 Claim pending
               </span>
             )}
             {dog.status === "resolved" && (
-              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+              <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700">
                 Reunited
               </span>
             )}
           </div>
 
           <dl className="space-y-1 text-sm">
-            <Row label="Found near" value={dog.foundLocation} />
-            <Row label="Date found" value={new Date(dog.foundDate).toLocaleDateString()} />
+            {dog.dogName && <Row label="Breed" value={dog.breedGuess ?? "Unknown"} />}
+            <Row label={isLost ? "Last seen near" : "Found near"} value={dog.foundLocation} />
+            <Row
+              label={isLost ? "Date last seen" : "Date found"}
+              value={new Date(dog.foundDate).toLocaleDateString()}
+            />
             <Row label="Size" value={dog.size ?? "Not sure"} />
             <Row label="Color" value={dog.color ?? "Not noted"} />
             <Row label="Collar/tags" value={dog.hasCollar ? "Yes" : "No"} />
             <Row label="Temperament" value={dog.temperament ?? "Not noted"} />
-            <Row label="Status when found" value={holdingLabel} />
+            {!isLost && <Row label="Status when found" value={holdingLabel} />}
           </dl>
 
           {dog.notes && (
@@ -99,12 +116,17 @@ export default async function DogDetailPage({
       </div>
 
       <div className="mt-6">
-        <DogDetailMap lat={dog.foundLat} lng={dog.foundLng} />
+        <DogDetailMap
+          lat={dog.foundLat}
+          lng={dog.foundLng}
+          listingType={dog.listingType}
+          status={dog.status}
+        />
       </div>
 
       {dog.status !== "resolved" && dog.status !== "expired" ? (
         <div className="mt-6">
-          <ClaimForm dogId={dog.id} />
+          <ClaimForm dogId={dog.id} listingType={dog.listingType} dogName={dog.dogName} />
         </div>
       ) : (
         <p className="mt-6 rounded-lg border border-black/10 bg-white p-4 text-sm text-black/60">

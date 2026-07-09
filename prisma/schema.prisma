@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum DogStatus {
@@ -12,6 +13,11 @@ enum DogStatus {
   claim_pending
   resolved
   expired
+}
+
+enum ListingType {
+  found
+  lost
 }
 
 enum HoldingStatus {
@@ -28,7 +34,9 @@ enum DogSize {
 
 model Dog {
   id             String        @id @default(cuid())
+  listingType    ListingType   @default(found)
   status         DogStatus     @default(active)
+  dogName        String?
   photoUrl       String
   foundLat       Float
   foundLng       Float
@@ -51,6 +59,7 @@ model Dog {
   claims         Claim[]
 
   @@index([status])
+  @@index([listingType])
 }
 
 enum ClaimStatus {

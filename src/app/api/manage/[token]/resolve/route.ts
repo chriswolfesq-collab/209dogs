@@ -17,7 +17,9 @@ export async function POST(
     data: { status: "resolved", resolvedAt: new Date() },
     select: {
       id: true,
+      listingType: true,
       status: true,
+      dogName: true,
       photoUrl: true,
       foundLocation: true,
       foundDate: true,

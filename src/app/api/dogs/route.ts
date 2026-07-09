@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q"); // free text over location description
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
+  const type = searchParams.get("type"); // "found" | "lost"
+  const includeReunited = searchParams.get("includeReunited") === "1";
 
   const parsedDateFrom = dateFrom ? new Date(dateFrom) : undefined;
   const parsedDateTo = dateTo ? new Date(dateTo) : undefined;
@@ -25,7 +27,14 @@ export async function GET(req: NextRequest) {
 
   const dogs = await prisma.dog.findMany({
     where: {
-      status: { in: ["active", "claim_pending"] },
+      status: {
+        in: includeReunited
+          ? ["active", "claim_pending", "resolved"]
+          : ["active", "claim_pending"],
+      },
+      ...(type && ["found", "lost"].includes(type)
+        ? { listingType: type as "found" | "lost" }
+        : {}),
       ...(size && ["small", "medium", "large"].includes(size)
         ? { size: size as "small" | "medium" | "large" }
         : {}),
@@ -43,7 +52,9 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
+      listingType: true,
       status: true,
+      dogName: true,
       photoUrl: true,
       foundLat: true,
       foundLng: true,
@@ -91,6 +102,8 @@ export async function POST(req: NextRequest) {
 
   const dog = await prisma.dog.create({
     data: {
+      listingType: parsed.data.listingType,
+      dogName: parsed.data.dogName,
       photoUrl: parsed.data.photoUrl,
       foundLat: parsed.data.foundLat,
       foundLng: parsed.data.foundLng,
@@ -112,11 +125,14 @@ export async function POST(req: NextRequest) {
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
   const manageUrl = `${baseUrl}/manage/${manageToken}`;
+  const isLost = parsed.data.listingType === "lost";
 
   await sendEmail({
     to: parsed.data.finderEmail,
-    subject: "Your found dog listing on Stockton Found Dogs",
-    body: `Thanks for posting! Your listing is live at ${baseUrl}/dogs/${dog.id}.\n\nUse this private link any time to see claims, mark the dog reunited, or remove the listing:\n${manageUrl}\n\nKeep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.`,
+    subject: isLost
+      ? "Your lost dog listing on Stockton Found Dogs"
+      : "Your found dog listing on Stockton Found Dogs",
+    body: `Thanks for posting! Your listing is live at ${baseUrl}/dogs/${dog.id}.\n\nUse this private link any time to see ${isLost ? "sightings" : "claims"}, mark the dog reunited, or remove the listing:\n${manageUrl}\n\nKeep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.`,
   });
 
   return NextResponse.json({ id: dog.id, manageToken }, { status: 201 });

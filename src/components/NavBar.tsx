@@ -7,9 +7,15 @@ export default function NavBar() {
         <Link href="/" className="text-lg font-semibold">
           🐾 Stockton Found Dogs
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex items-center gap-3 text-sm">
           <Link href="/dogs" className="hover:underline">
             Browse
+          </Link>
+          <Link
+            href="/dogs/report-lost"
+            className="rounded-md border border-black/20 px-3 py-1.5 hover:bg-black/5"
+          >
+            Report a Lost Dog
           </Link>
           <Link
             href="/dogs/new"
