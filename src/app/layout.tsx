@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stockton Found Dogs",
+  title: "Stockton, CA Found Dogs",
   description:
     "Report a found dog, browse found dogs on a map, and reunite pets with their owners in Stockton, CA.",
 };

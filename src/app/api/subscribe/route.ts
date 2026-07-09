@@ -40,10 +40,10 @@ export async function POST(req: NextRequest) {
 
   await sendEmail({
     to: parsed.data.email,
-    subject: "You're subscribed to Stockton Found Dogs alerts",
-    body: `You'll now get an email whenever a new lost or found dog is posted on Stockton Found Dogs.\n\nDidn't sign up for this? Unsubscribe here:\n${unsubscribeUrl}`,
+    subject: "You're subscribed to Stockton, CA Found Dogs alerts",
+    body: `You'll now get an email whenever a new lost or found dog is posted on Stockton, CA Found Dogs.\n\nDidn't sign up for this? Unsubscribe here:\n${unsubscribeUrl}`,
     html: renderEmailHtml(
-      `<p>You'll now get an email whenever a new lost or found dog is posted on Stockton Found Dogs.</p>
+      `<p>You'll now get an email whenever a new lost or found dog is posted on Stockton, CA Found Dogs.</p>
 <p><a href="${unsubscribeUrl}">Unsubscribe</a> at any time.</p>`
     ),
   });

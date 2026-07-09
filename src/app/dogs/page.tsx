@@ -68,7 +68,7 @@ export default function DogsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Lost &amp; Found Dogs in Stockton</h1>
+        <h1 className="text-2xl font-semibold">Lost &amp; Found Dogs in Stockton, CA</h1>
         <div className="flex items-center gap-3">
           <Link
             href="/dogs/report-lost"

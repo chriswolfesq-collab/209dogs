@@ -135,8 +135,8 @@ export async function POST(req: NextRequest) {
   await sendEmail({
     to: parsed.data.finderEmail,
     subject: isLost
-      ? "Your lost dog listing on Stockton Found Dogs"
-      : "Your found dog listing on Stockton Found Dogs",
+      ? "Your lost dog listing on Stockton, CA Found Dogs"
+      : "Your found dog listing on Stockton, CA Found Dogs",
     body: `Thanks for posting! Your listing is live at ${listingUrl}.\n\nUse this private link any time to see ${claimsLabel}, mark the dog reunited, or remove the listing:\n${manageUrl}\n\nKeep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.`,
     html: renderEmailHtml(
       `<p>Thanks for posting! Your listing is live at <a href="${listingUrl}">${listingUrl}</a>.</p>
@@ -152,8 +152,8 @@ export async function POST(req: NextRequest) {
 
   const dogLabel = dog.dogName || parsed.data.breedGuess || "A dog";
   const alertSubject = isLost
-    ? `Lost dog alert: ${dogLabel} in Stockton`
-    : `Found dog alert: ${dogLabel} in Stockton`;
+    ? `Lost dog alert: ${dogLabel} in Stockton, CA`
+    : `Found dog alert: ${dogLabel} in Stockton, CA`;
 
   await Promise.all(
     subscribers.map((subscriber) => {
