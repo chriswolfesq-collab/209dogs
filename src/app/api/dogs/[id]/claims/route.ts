@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, escapeHtml, renderEmailHtml } from "@/lib/email";
 import { createClaimSchema } from "@/lib/validation";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
+import { getBaseUrl } from "@/lib/baseUrl";
 
 export async function POST(
   req: NextRequest,
@@ -59,9 +60,14 @@ export async function POST(
     });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const manageUrl = `${baseUrl}/manage/${dog.manageToken}`;
   const isLost = dog.listingType === "lost";
+
+  const claimantName = escapeHtml(parsed.data.claimantName);
+  const claimantContact = escapeHtml(parsed.data.claimantContact);
+  const proofAnswer = escapeHtml(parsed.data.proofAnswer);
+  const dogLabel = escapeHtml(dog.dogName || "the dog");
 
   await sendEmail({
     to: dog.finderEmail,
@@ -71,6 +77,19 @@ export async function POST(
     body: isLost
       ? `${parsed.data.claimantName} submitted a sighting for ${dog.dogName || "the dog"} you posted as lost.\n\nTheir contact info: ${parsed.data.claimantContact}\n\nWhat they said:\n"${parsed.data.proofAnswer}"\n\nReview all sightings and manage your listing here:\n${manageUrl}\n\nIf this sounds promising, reach out to them directly.`
       : `${parsed.data.claimantName} submitted a claim for the dog you posted.\n\nTheir contact info: ${parsed.data.claimantContact}\n\nWhat they said to identify the dog:\n"${parsed.data.proofAnswer}"\n\nReview all claims and manage your listing here:\n${manageUrl}\n\nIf this sounds legit, reach out to them directly. If it doesn't hold up, you can ignore it and wait for other claims.`,
+    html: renderEmailHtml(
+      isLost
+        ? `<p>${claimantName} submitted a sighting for ${dogLabel} you posted as lost.</p>
+<p>Their contact info: <strong>${claimantContact}</strong></p>
+<p>What they said:<br>&ldquo;${proofAnswer}&rdquo;</p>
+<p><a href="${manageUrl}">Review all sightings and manage your listing</a></p>
+<p>If this sounds promising, reach out to them directly.</p>`
+        : `<p>${claimantName} submitted a claim for the dog you posted.</p>
+<p>Their contact info: <strong>${claimantContact}</strong></p>
+<p>What they said to identify the dog:<br>&ldquo;${proofAnswer}&rdquo;</p>
+<p><a href="${manageUrl}">Review all claims and manage your listing</a></p>
+<p>If this sounds legit, reach out to them directly. If it doesn't hold up, you can ignore it and wait for other claims.</p>`
+    ),
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });

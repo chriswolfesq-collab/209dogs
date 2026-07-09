@@ -8,6 +8,7 @@ export type Filters = {
   dateFrom: string;
   dateTo: string;
   includeReunited: boolean;
+  sort: "newest" | "oldest";
 };
 
 export const EMPTY_FILTERS: Filters = {
@@ -18,6 +19,7 @@ export const EMPTY_FILTERS: Filters = {
   dateFrom: "",
   dateTo: "",
   includeReunited: false,
+  sort: "newest",
 };
 
 type Props = {
@@ -31,7 +33,7 @@ export default function FilterBar({ filters, onChange }: Props) {
   }
 
   const hasActiveFilters = Object.entries(filters).some(
-    ([key, value]) => key !== "includeReunited" && Boolean(value)
+    ([key, value]) => key !== "includeReunited" && key !== "sort" && Boolean(value)
   );
 
   return (
@@ -103,6 +105,17 @@ export default function FilterBar({ filters, onChange }: Props) {
             className="rounded border border-black/20 px-2 py-1 text-sm"
           />
         </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-black/60">Sort by</label>
+          <select
+            value={filters.sort}
+            onChange={(e) => set("sort", e.target.value as Filters["sort"])}
+            className="rounded border border-black/20 px-2 py-1 text-sm"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
         <label className="flex items-center gap-1.5 pb-1.5 text-sm text-black/70">
           <input
             type="checkbox"
@@ -114,7 +127,13 @@ export default function FilterBar({ filters, onChange }: Props) {
         {hasActiveFilters && (
           <button
             type="button"
-            onClick={() => onChange({ ...EMPTY_FILTERS, includeReunited: filters.includeReunited })}
+            onClick={() =>
+              onChange({
+                ...EMPTY_FILTERS,
+                includeReunited: filters.includeReunited,
+                sort: filters.sort,
+              })
+            }
             className="text-sm text-black/60 underline hover:text-black"
           >
             Clear filters

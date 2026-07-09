@@ -1,7 +1,12 @@
+import SubscribeForm from "@/components/SubscribeForm";
+
 export default function Footer() {
   return (
     <footer className="border-t border-black/10 bg-white">
       <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-black/60">
+        <div className="mb-4">
+          <SubscribeForm />
+        </div>
         <p>
           A found dog? Stockton Animal Services can help with shelter intake,
           microchip scans, and legal holding requirements — see their{" "}

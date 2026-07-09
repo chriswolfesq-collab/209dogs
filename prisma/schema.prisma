@@ -81,6 +81,13 @@ model Claim {
   @@index([dogId])
 }
 
+model Subscriber {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  unsubscribeToken String   @unique
+  createdAt        DateTime @default(now())
+}
+
 model DevEmail {
   id        String   @id @default(cuid())
   to        String

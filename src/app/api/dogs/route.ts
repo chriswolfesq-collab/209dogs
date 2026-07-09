@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, renderEmailHtml, escapeHtml } from "@/lib/email";
 import { createDogSchema } from "@/lib/validation";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 import { LISTING_LIFETIME_DAYS } from "@/lib/constants";
+import { getBaseUrl } from "@/lib/baseUrl";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
   const dateTo = searchParams.get("dateTo");
   const type = searchParams.get("type"); // "found" | "lost"
   const includeReunited = searchParams.get("includeReunited") === "1";
+  const sort = searchParams.get("sort") === "oldest" ? "oldest" : "newest";
 
   const parsedDateFrom = dateFrom ? new Date(dateFrom) : undefined;
   const parsedDateTo = dateTo ? new Date(dateTo) : undefined;
@@ -49,7 +51,7 @@ export async function GET(req: NextRequest) {
           }
         : {}),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: sort === "oldest" ? "asc" : "desc" },
     select: {
       id: true,
       listingType: true,
@@ -123,17 +125,51 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const manageUrl = `${baseUrl}/manage/${manageToken}`;
   const isLost = parsed.data.listingType === "lost";
+
+  const listingUrl = `${baseUrl}/dogs/${dog.id}`;
+  const claimsLabel = isLost ? "sightings" : "claims";
 
   await sendEmail({
     to: parsed.data.finderEmail,
     subject: isLost
       ? "Your lost dog listing on Stockton Found Dogs"
       : "Your found dog listing on Stockton Found Dogs",
-    body: `Thanks for posting! Your listing is live at ${baseUrl}/dogs/${dog.id}.\n\nUse this private link any time to see ${isLost ? "sightings" : "claims"}, mark the dog reunited, or remove the listing:\n${manageUrl}\n\nKeep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.`,
+    body: `Thanks for posting! Your listing is live at ${listingUrl}.\n\nUse this private link any time to see ${claimsLabel}, mark the dog reunited, or remove the listing:\n${manageUrl}\n\nKeep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.`,
+    html: renderEmailHtml(
+      `<p>Thanks for posting! Your listing is live at <a href="${listingUrl}">${listingUrl}</a>.</p>
+<p>Use this private link any time to see ${claimsLabel}, mark the dog reunited, or remove the listing:</p>
+<p><a href="${manageUrl}">${manageUrl}</a></p>
+<p>Keep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.</p>`
+    ),
   });
+
+  const subscribers = await prisma.subscriber.findMany({
+    where: { email: { not: parsed.data.finderEmail } },
+  });
+
+  const dogLabel = dog.dogName || parsed.data.breedGuess || "A dog";
+  const alertSubject = isLost
+    ? `Lost dog alert: ${dogLabel} in Stockton`
+    : `Found dog alert: ${dogLabel} in Stockton`;
+
+  await Promise.all(
+    subscribers.map((subscriber) => {
+      const unsubscribeUrl = `${baseUrl}/unsubscribe/${subscriber.unsubscribeToken}`;
+      return sendEmail({
+        to: subscriber.email,
+        subject: alertSubject,
+        body: `A new ${isLost ? "lost" : "found"} dog was just posted near ${parsed.data.foundLocation}.\n\nView the listing:\n${listingUrl}\n\nUnsubscribe from these alerts:\n${unsubscribeUrl}`,
+        html: renderEmailHtml(
+          `<p>A new ${isLost ? "lost" : "found"} dog was just posted near ${escapeHtml(parsed.data.foundLocation)}.</p>
+<p><a href="${listingUrl}">View the listing</a></p>
+<p><a href="${unsubscribeUrl}">Unsubscribe</a> from these alerts.</p>`
+        ),
+      });
+    })
+  );
 
   return NextResponse.json({ id: dog.id, manageToken }, { status: 201 });
 }

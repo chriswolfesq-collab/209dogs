@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { MANAGE_DOG_SELECT } from "../route";
 
 export async function POST(
   _req: NextRequest,
@@ -15,27 +16,7 @@ export async function POST(
   const updated = await prisma.dog.update({
     where: { id: dog.id },
     data: { status: "resolved", resolvedAt: new Date() },
-    select: {
-      id: true,
-      listingType: true,
-      status: true,
-      dogName: true,
-      photoUrl: true,
-      foundLocation: true,
-      foundDate: true,
-      breedGuess: true,
-      claims: {
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          claimantName: true,
-          claimantContact: true,
-          proofAnswer: true,
-          status: true,
-          createdAt: true,
-        },
-      },
-    },
+    select: MANAGE_DOG_SELECT,
   });
 
   return NextResponse.json({ dog: updated });

@@ -37,6 +37,7 @@ export default function DogsPage() {
     if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.set("dateTo", filters.dateTo);
     if (filters.includeReunited) params.set("includeReunited", "1");
+    if (filters.sort) params.set("sort", filters.sort);
     return params.toString();
   }, [filters]);
 
