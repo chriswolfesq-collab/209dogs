@@ -5,7 +5,7 @@ export default function NavBar() {
     <header className="border-b border-black/10 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/" className="text-lg font-semibold">
-          🐾 Stockton Lost &amp; Found Dogs
+          🐾 Stockton, CA Lost &amp; Found Dogs
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/dogs" className="hover:underline">
