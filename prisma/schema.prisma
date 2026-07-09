@@ -84,6 +84,11 @@ model Claim {
 model Subscriber {
   id               String   @id @default(cuid())
   email            String   @unique
+  // Double opt-in: alerts only go out once confirmed is true (the recipient
+  // clicked the link in the confirmation email), so entering a stranger's
+  // email doesn't immediately subscribe them.
+  confirmed        Boolean  @default(false)
+  confirmToken     String   @unique
   unsubscribeToken String   @unique
   createdAt        DateTime @default(now())
 }
@@ -94,4 +99,16 @@ model DevEmail {
   subject   String
   body      String
   createdAt DateTime @default(now())
+}
+
+// Backs isRateLimited() in src/lib/rateLimit.ts. A DB-backed sliding window
+// (rather than an in-memory Map) is required because Vercel serverless
+// functions are multi-instance and short-lived — an in-memory counter
+// resets on every cold start and isn't shared across concurrent instances.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }

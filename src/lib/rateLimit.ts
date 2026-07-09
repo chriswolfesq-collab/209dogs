@@ -1,14 +1,23 @@
-// Minimal in-memory rate limiter. Good enough for a single-instance dev/small
-// deployment; swap for a durable store (Upstash Redis, etc.) if this scales
-// to multiple server instances.
-const hits = new Map<string, number[]>();
+import { prisma } from "@/lib/prisma";
 
-export function isRateLimited(key: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  const timestamps = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
-  timestamps.push(now);
-  hits.set(key, timestamps);
-  return timestamps.length > limit;
+// Postgres-backed sliding-window rate limiter. An in-memory Map doesn't work
+// on Vercel: serverless functions are multi-instance and recycled constantly,
+// so an in-memory counter resets far more often than the window implies and
+// isn't shared across concurrent instances anyway.
+export async function isRateLimited(key: string, limit: number, windowMs: number) {
+  const windowStart = new Date(Date.now() - windowMs);
+
+  await prisma.rateLimitHit.deleteMany({
+    where: { key, createdAt: { lt: windowStart } },
+  });
+
+  const count = await prisma.rateLimitHit.count({
+    where: { key, createdAt: { gte: windowStart } },
+  });
+
+  await prisma.rateLimitHit.create({ data: { key } });
+
+  return count >= limit;
 }
 
 export function getClientIp(headers: Headers) {

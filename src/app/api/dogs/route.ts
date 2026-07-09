@@ -1,11 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
-import { sendEmail, renderEmailHtml, escapeHtml } from "@/lib/email";
+import { sendEmail, sendEmailBatch, renderEmailHtml, escapeHtml } from "@/lib/email";
 import { createDogSchema } from "@/lib/validation";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 import { LISTING_LIFETIME_DAYS } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/baseUrl";
+import { findPotentialMatches } from "@/lib/matching";
+
+// finderEmail and manageToken must never appear here — this select backs
+// the public browse API. collarTagInfo is also excluded: it's used as a
+// claimant verification question and must stay private (see
+// src/app/api/dogs/[id]/route.ts). Covered by src/lib/__tests__/privacy.test.ts.
+export const PUBLIC_DOG_LIST_SELECT = {
+  id: true,
+  listingType: true,
+  status: true,
+  dogName: true,
+  photoUrl: true,
+  foundLat: true,
+  foundLng: true,
+  foundLocation: true,
+  foundDate: true,
+  breedGuess: true,
+  size: true,
+  color: true,
+  hasCollar: true,
+  temperament: true,
+  holdingStatus: true,
+  createdAt: true,
+} as const;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -34,14 +58,15 @@ export async function GET(req: NextRequest) {
           ? ["active", "claim_pending", "resolved"]
           : ["active", "claim_pending"],
       },
+      expiresAt: { gt: new Date() },
       ...(type && ["found", "lost"].includes(type)
         ? { listingType: type as "found" | "lost" }
         : {}),
       ...(size && ["small", "medium", "large"].includes(size)
         ? { size: size as "small" | "medium" | "large" }
         : {}),
-      ...(color ? { color: { contains: color } } : {}),
-      ...(q ? { foundLocation: { contains: q } } : {}),
+      ...(color ? { color: { contains: color, mode: "insensitive" } } : {}),
+      ...(q ? { foundLocation: { contains: q, mode: "insensitive" } } : {}),
       ...(parsedDateFrom || parsedDateTo
         ? {
             foundDate: {
@@ -52,24 +77,7 @@ export async function GET(req: NextRequest) {
         : {}),
     },
     orderBy: { createdAt: sort === "oldest" ? "asc" : "desc" },
-    select: {
-      id: true,
-      listingType: true,
-      status: true,
-      dogName: true,
-      photoUrl: true,
-      foundLat: true,
-      foundLng: true,
-      foundLocation: true,
-      foundDate: true,
-      breedGuess: true,
-      size: true,
-      color: true,
-      hasCollar: true,
-      temperament: true,
-      holdingStatus: true,
-      createdAt: true,
-    },
+    select: PUBLIC_DOG_LIST_SELECT,
   });
 
   return NextResponse.json({ dogs });
@@ -77,7 +85,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
-  if (isRateLimited(`create-dog:${ip}`, 5, 60 * 60 * 1000)) {
+  if (await isRateLimited(`create-dog:${ip}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many listings created recently. Please try again later." },
       { status: 429 }
@@ -146,8 +154,57 @@ export async function POST(req: NextRequest) {
     ),
   });
 
+  const matches = await findPotentialMatches({
+    id: dog.id,
+    listingType: dog.listingType,
+    foundLat: dog.foundLat,
+    foundLng: dog.foundLng,
+    foundDate: dog.foundDate,
+  });
+
+  if (matches.length > 0) {
+    const matchListHtml = matches
+      .map(
+        (m) =>
+          `<li><a href="${baseUrl}/dogs/${m.id}">${escapeHtml(m.dogName || m.breedGuess || "A dog")} near ${escapeHtml(m.foundLocation)}</a></li>`
+      )
+      .join("");
+    const matchListText = matches
+      .map(
+        (m) => `- ${m.dogName || m.breedGuess || "A dog"} near ${m.foundLocation}: ${baseUrl}/dogs/${m.id}`
+      )
+      .join("\n");
+
+    await sendEmailBatch([
+      {
+        to: parsed.data.finderEmail,
+        subject: isLost
+          ? "Possible matches for your lost dog"
+          : "Possible matches for the dog you found",
+        body: `We found ${matches.length} ${isLost ? "found" : "lost"} dog report(s) near your listing that might be a match:\n\n${matchListText}\n\nTake a look and reach out through the listing if one looks right.`,
+        html: renderEmailHtml(
+          `<p>We found ${matches.length} ${isLost ? "found" : "lost"} dog report(s) near your listing that might be a match:</p>
+<ul>${matchListHtml}</ul>
+<p>Take a look and reach out through the listing if one looks right.</p>`
+        ),
+      },
+      ...matches.map((m) => ({
+        to: m.finderEmail,
+        subject: isLost
+          ? "A dog was just found that might be yours"
+          : "Someone just reported a dog that might match yours",
+        body: `A new ${isLost ? "found" : "lost"} dog report was just posted near ${parsed.data.foundLocation} that might match yours:\n${listingUrl}\n\nTake a look and see if it matches.`,
+        html: renderEmailHtml(
+          `<p>A new ${isLost ? "found" : "lost"} dog report was just posted near ${escapeHtml(parsed.data.foundLocation)} that might match yours:</p>
+<p><a href="${listingUrl}">${listingUrl}</a></p>
+<p>Take a look and see if it matches.</p>`
+        ),
+      })),
+    ]);
+  }
+
   const subscribers = await prisma.subscriber.findMany({
-    where: { email: { not: parsed.data.finderEmail } },
+    where: { email: { not: parsed.data.finderEmail }, confirmed: true },
   });
 
   const dogLabel = dog.dogName || parsed.data.breedGuess || "A dog";
@@ -155,10 +212,10 @@ export async function POST(req: NextRequest) {
     ? `Lost dog alert: ${dogLabel} in Stockton, CA`
     : `Found dog alert: ${dogLabel} in Stockton, CA`;
 
-  await Promise.all(
+  await sendEmailBatch(
     subscribers.map((subscriber) => {
       const unsubscribeUrl = `${baseUrl}/unsubscribe/${subscriber.unsubscribeToken}`;
-      return sendEmail({
+      return {
         to: subscriber.email,
         subject: alertSubject,
         body: `A new ${isLost ? "lost" : "found"} dog was just posted near ${parsed.data.foundLocation}.\n\nView the listing:\n${listingUrl}\n\nUnsubscribe from these alerts:\n${unsubscribeUrl}`,
@@ -167,7 +224,7 @@ export async function POST(req: NextRequest) {
 <p><a href="${listingUrl}">View the listing</a></p>
 <p><a href="${unsubscribeUrl}">Unsubscribe</a> from these alerts.</p>`
         ),
-      });
+      };
     })
   );
 

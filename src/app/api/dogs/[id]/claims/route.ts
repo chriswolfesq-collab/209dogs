@@ -12,7 +12,7 @@ export async function POST(
   const { id } = await params;
 
   const ip = getClientIp(req.headers);
-  if (isRateLimited(`create-claim:${ip}`, 10, 60 * 60 * 1000)) {
+  if (await isRateLimited(`create-claim:${ip}`, 10, 60 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many claims submitted recently. Please try again later." },
       { status: 429 }
@@ -32,7 +32,7 @@ export async function POST(
   if (!dog) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (dog.status === "resolved" || dog.status === "expired") {
+  if (dog.status === "resolved" || dog.status === "expired" || dog.expiresAt <= new Date()) {
     return NextResponse.json(
       { error: "This listing is no longer accepting claims." },
       { status: 400 }

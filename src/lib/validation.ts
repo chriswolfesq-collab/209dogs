@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+// Shared by create/update: must parse to a real date and can't be in the
+// future (allowing a day of slack for timezone differences between the
+// browser and server).
+const foundDateSchema = z
+  .string()
+  .min(1, "Date is required")
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), "Enter a valid date")
+  .refine(
+    (v) => new Date(v).getTime() <= Date.now() + 24 * 60 * 60 * 1000,
+    "Date can't be in the future"
+  );
+
 export const createDogSchema = z.object({
   listingType: z.enum(["found", "lost"]).default("found"),
   dogName: z.string().max(100).optional(),
@@ -7,7 +19,7 @@ export const createDogSchema = z.object({
   foundLat: z.number().min(-90).max(90),
   foundLng: z.number().min(-180).max(180),
   foundLocation: z.string().min(3, "Describe the location").max(300),
-  foundDate: z.string().min(1, "Date is required"),
+  foundDate: foundDateSchema,
   breedGuess: z.string().max(100).optional(),
   size: z.enum(["small", "medium", "large"]).optional(),
   color: z.string().max(100).optional(),
@@ -35,7 +47,7 @@ export const updateDogSchema = z.object({
   foundLat: z.number().min(-90).max(90),
   foundLng: z.number().min(-180).max(180),
   foundLocation: z.string().min(3, "Describe the location").max(300),
-  foundDate: z.string().min(1, "Date is required"),
+  foundDate: foundDateSchema,
   breedGuess: z.string().max(100).nullable().optional(),
   size: z.enum(["small", "medium", "large"]).nullable().optional(),
   color: z.string().max(100).nullable().optional(),
@@ -54,6 +66,10 @@ export const createClaimSchema = z.object({
     .min(10, "Please give a more detailed answer (10+ characters)")
     .max(1000),
   website: z.string().max(0).optional(),
+});
+
+export const updateClaimStatusSchema = z.object({
+  status: z.enum(["new", "finder_contacted", "rejected"]),
 });
 
 export const subscribeSchema = z.object({

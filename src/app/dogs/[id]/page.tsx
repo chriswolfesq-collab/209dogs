@@ -1,9 +1,64 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ClaimForm from "@/components/ClaimForm";
 import DogDetailMap from "@/components/DogDetailMap";
+import { getBaseUrl } from "@/lib/baseUrl";
+import { PUBLIC_DOG_SELECT } from "@/app/api/dogs/[id]/route";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+
+  const dog = await prisma.dog.findUnique({
+    where: { id },
+    select: {
+      dogName: true,
+      breedGuess: true,
+      photoUrl: true,
+      foundLocation: true,
+      listingType: true,
+    },
+  });
+
+  if (!dog) return {};
+
+  const isLost = dog.listingType === "lost";
+  const label = dog.dogName || dog.breedGuess || "A dog";
+  const title = isLost
+    ? `Lost dog: ${label} — Stockton, CA Found Dogs`
+    : `Found dog: ${label} — Stockton, CA Found Dogs`;
+  const description = isLost
+    ? `Last seen near ${dog.foundLocation}. Have you seen this dog?`
+    : `Found near ${dog.foundLocation}. Is this your dog?`;
+
+  const baseUrl = getBaseUrl();
+  const imageUrl = dog.photoUrl.startsWith("http") ? dog.photoUrl : `${baseUrl}${dog.photoUrl}`;
+  const pageUrl = `${baseUrl}/dogs/${id}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      images: [{ url: imageUrl, width: 900, height: 900 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
 
 export default async function DogDetailPage({
   params,
@@ -17,25 +72,7 @@ export default async function DogDetailPage({
 
   const dog = await prisma.dog.findUnique({
     where: { id },
-    select: {
-      id: true,
-      listingType: true,
-      status: true,
-      dogName: true,
-      photoUrl: true,
-      foundLat: true,
-      foundLng: true,
-      foundLocation: true,
-      foundDate: true,
-      breedGuess: true,
-      size: true,
-      color: true,
-      hasCollar: true,
-      collarTagInfo: true,
-      temperament: true,
-      holdingStatus: true,
-      notes: true,
-    },
+    select: PUBLIC_DOG_SELECT,
   });
 
   if (!dog) notFound();
@@ -112,6 +149,13 @@ export default async function DogDetailPage({
               {dog.notes}
             </p>
           )}
+
+          <Link
+            href={`/dogs/${dog.id}/flyer`}
+            className="mt-3 inline-block text-sm font-medium text-neutral-900 underline hover:no-underline"
+          >
+            Print a flyer for this dog
+          </Link>
         </div>
       </div>
 

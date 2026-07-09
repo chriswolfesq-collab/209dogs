@@ -67,3 +67,64 @@ export async function sendEmail({ to, subject, body, html }: SendEmailArgs) {
     console.error("[email] failed to send", { to, subject }, err);
   }
 }
+
+const RESEND_BATCH_LIMIT = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
+ * Sends many independent emails (e.g. a new-listing alert fanned out to
+ * every subscriber) via Resend's /emails/batch endpoint instead of one
+ * request per recipient — Resend's per-second rate limit makes a `Promise
+ * .all` of individual sendEmail calls unreliable past a couple dozen
+ * recipients. Falls back to individual DevEmail rows in local dev, same as
+ * sendEmail.
+ *
+ * Never throws, for the same reason as sendEmail.
+ */
+export async function sendEmailBatch(emails: SendEmailArgs[]) {
+  if (emails.length === 0) return;
+
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    await prisma.devEmail.createMany({
+      data: emails.map(({ to, subject, body }) => ({ to, subject, body })),
+    });
+    return;
+  }
+
+  for (const batch of chunk(emails, RESEND_BATCH_LIMIT)) {
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          batch.map(({ to, subject, body, html }) => ({
+            from: process.env.EMAIL_FROM,
+            to,
+            subject,
+            text: body,
+            ...(html ? { html } : {}),
+          }))
+        ),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed to send email batch via Resend: ${errText}`);
+      }
+    } catch (err) {
+      console.error("[email] failed to send batch", { count: batch.length }, err);
+    }
+  }
+}

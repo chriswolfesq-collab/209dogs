@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateDogSchema } from "@/lib/validation";
+import { deletePhoto } from "@/lib/storage";
 
 export const MANAGE_DOG_SELECT = {
   id: true,
@@ -78,6 +79,10 @@ export async function PATCH(
     );
   }
 
+  if (parsed.data.photoUrl !== dog.photoUrl) {
+    await deletePhoto(dog.photoUrl);
+  }
+
   const updated = await prisma.dog.update({
     where: { id: dog.id },
     data: {
@@ -114,5 +119,6 @@ export async function DELETE(
   }
 
   await prisma.dog.delete({ where: { id: dog.id } });
+  await deletePhoto(dog.photoUrl);
   return NextResponse.json({ ok: true });
 }

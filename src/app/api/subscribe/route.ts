@@ -8,7 +8,7 @@ import { getBaseUrl } from "@/lib/baseUrl";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
-  if (isRateLimited(`subscribe:${ip}`, 5, 60 * 60 * 1000)) {
+  if (await isRateLimited(`subscribe:${ip}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json(
       { error: "Too many attempts. Please try again later." },
       { status: 429 }
@@ -32,19 +32,30 @@ export async function POST(req: NextRequest) {
   const subscriber = await prisma.subscriber.upsert({
     where: { email: parsed.data.email },
     update: {},
-    create: { email: parsed.data.email, unsubscribeToken: nanoid(32) },
+    create: {
+      email: parsed.data.email,
+      confirmToken: nanoid(32),
+      unsubscribeToken: nanoid(32),
+    },
   });
 
+  // Already confirmed (e.g. re-submitting the form): nothing to do, and
+  // don't re-send a confirm email for an address that isn't waiting on one.
+  if (subscriber.confirmed) {
+    return NextResponse.json({ ok: true });
+  }
+
   const baseUrl = getBaseUrl();
-  const unsubscribeUrl = `${baseUrl}/unsubscribe/${subscriber.unsubscribeToken}`;
+  const confirmUrl = `${baseUrl}/subscribe/confirm/${subscriber.confirmToken}`;
 
   await sendEmail({
     to: parsed.data.email,
-    subject: "You're subscribed to Stockton, CA Found Dogs alerts",
-    body: `You'll now get an email whenever a new lost or found dog is posted on Stockton, CA Found Dogs.\n\nDidn't sign up for this? Unsubscribe here:\n${unsubscribeUrl}`,
+    subject: "Confirm your Stockton, CA Found Dogs alerts",
+    body: `Someone (hopefully you) asked to get emailed whenever a new lost or found dog is posted on Stockton, CA Found Dogs.\n\nConfirm your subscription:\n${confirmUrl}\n\nIf this wasn't you, just ignore this email — you won't be subscribed.`,
     html: renderEmailHtml(
-      `<p>You'll now get an email whenever a new lost or found dog is posted on Stockton, CA Found Dogs.</p>
-<p><a href="${unsubscribeUrl}">Unsubscribe</a> at any time.</p>`
+      `<p>Someone (hopefully you) asked to get emailed whenever a new lost or found dog is posted on Stockton, CA Found Dogs.</p>
+<p><a href="${confirmUrl}">Confirm your subscription</a></p>
+<p>If this wasn't you, just ignore this email — you won't be subscribed.</p>`
     ),
   });
 

@@ -19,6 +19,17 @@ const DogMap = dynamic(() => import("@/components/DogMap"), {
 type Dog = DogSummary & Pick<DogPin, "foundLat" | "foundLng"> & { listingType: string };
 type ViewMode = "split" | "map" | "list";
 
+// Debounces just the free-text fields so typing doesn't fire a fetch per
+// keystroke; button/select filters still apply immediately.
+function useDebounced<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
+
 export default function DogsPage() {
   const [view, setView] = useState<ViewMode>("split");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -27,18 +38,21 @@ export default function DogsPage() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const debouncedQ = useDebounced(filters.q, 300);
+  const debouncedColor = useDebounced(filters.color, 300);
+
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     if (filters.type) params.set("type", filters.type);
     if (filters.size) params.set("size", filters.size);
-    if (filters.color) params.set("color", filters.color);
-    if (filters.q) params.set("q", filters.q);
+    if (debouncedColor) params.set("color", debouncedColor);
+    if (debouncedQ) params.set("q", debouncedQ);
     if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.set("dateTo", filters.dateTo);
     if (filters.includeReunited) params.set("includeReunited", "1");
     if (filters.sort) params.set("sort", filters.sort);
     return params.toString();
-  }, [filters]);
+  }, [filters, debouncedQ, debouncedColor]);
 
   useEffect(() => {
     let cancelled = false;

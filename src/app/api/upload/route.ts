@@ -17,7 +17,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 // Vercel's serverless filesystem is read-only/ephemeral.
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
-  if (isRateLimited(`upload:${ip}`, 20, 60 * 60 * 1000)) {
+  if (await isRateLimited(`upload:${ip}`, 20, 60 * 60 * 1000)) {
     return NextResponse.json({ error: "Too many uploads. Try again later." }, { status: 429 });
   }
 

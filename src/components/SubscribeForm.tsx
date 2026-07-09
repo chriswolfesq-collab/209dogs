@@ -28,7 +28,11 @@ export default function SubscribeForm() {
   }
 
   if (status === "done") {
-    return <p className="text-sm text-black/60">You&apos;re subscribed to new dog alerts. 🐾</p>;
+    return (
+      <p className="text-sm text-black/60">
+        Almost done — check your email and click the confirmation link. 🐾
+      </p>
+    );
   }
 
   return (

@@ -15,3 +15,9 @@ export const DOG_SIZES = ["small", "medium", "large"] as const;
 export const HOLDING_STATUSES = ["holding", "still_loose", "taken_to_shelter"] as const;
 
 export const LISTING_LIFETIME_DAYS = 30;
+
+// Proximity matching (src/lib/matching.ts): how close in space/time a lost
+// and a found report need to be to notify both sides of a possible match.
+export const MATCH_RADIUS_KM = 5;
+export const MATCH_DATE_WINDOW_DAYS = 14;
+export const MATCH_MAX_RESULTS = 5;

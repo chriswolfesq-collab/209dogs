@@ -98,6 +98,31 @@ export default function ManageDogPage({
     }
   }
 
+  async function handleClaimStatusChange(claimId: string, status: string) {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/manage/${token}/claims/${claimId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to update claim");
+      setDog((prev) =>
+        prev
+          ? {
+              ...prev,
+              claims: prev.claims.map((c) => (c.id === claimId ? data.claim : c)),
+            }
+          : prev
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update claim");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) return <p className="mx-auto max-w-2xl px-4 py-12 text-center text-black/40">Loading…</p>;
   if (error || !dog)
     return (
@@ -188,16 +213,48 @@ export default function ManageDogPage({
         <div className="space-y-3">
           {dog.claims.map((claim) => (
             <div key={claim.id} className="rounded-lg border border-black/10 bg-white p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="font-medium">{claim.claimantName}</span>
-                <span className="text-xs text-black/40">
-                  {new Date(claim.createdAt).toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <ClaimStatusBadge status={claim.status} />
+                  <span className="text-xs text-black/40">
+                    {new Date(claim.createdAt).toLocaleString()}
+                  </span>
+                </div>
               </div>
               <div className="mt-1 text-sm">
                 Contact: <span className="font-medium">{claim.claimantContact}</span>
               </div>
               <p className="mt-2 text-sm text-black/70">&ldquo;{claim.proofAnswer}&rdquo;</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {claim.status !== "finder_contacted" && (
+                  <button
+                    onClick={() => handleClaimStatusChange(claim.id, "finder_contacted")}
+                    disabled={busy}
+                    className="rounded-md border border-black/20 px-3 py-1 text-xs font-medium hover:bg-black/5 disabled:opacity-50"
+                  >
+                    Mark Contacted
+                  </button>
+                )}
+                {claim.status !== "rejected" && (
+                  <button
+                    onClick={() => handleClaimStatusChange(claim.id, "rejected")}
+                    disabled={busy}
+                    className="rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    Dismiss
+                  </button>
+                )}
+                {claim.status !== "new" && (
+                  <button
+                    onClick={() => handleClaimStatusChange(claim.id, "new")}
+                    disabled={busy}
+                    className="rounded-md border border-black/20 px-3 py-1 text-xs font-medium hover:bg-black/5 disabled:opacity-50"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -461,5 +518,27 @@ function EditDogForm({
         </div>
       </form>
     </div>
+  );
+}
+
+function ClaimStatusBadge({ status }: { status: string }) {
+  if (status === "finder_contacted") {
+    return (
+      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+        Contacted
+      </span>
+    );
+  }
+  if (status === "rejected") {
+    return (
+      <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700">
+        Dismissed
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+      New
+    </span>
   );
 }
