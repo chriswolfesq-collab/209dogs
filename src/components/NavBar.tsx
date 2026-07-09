@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { isAdmin } from "@/lib/adminAuth";
+import { logoutAdmin } from "@/lib/adminActions";
 
-export default function NavBar() {
+export default async function NavBar() {
+  const admin = await isAdmin();
+
   return (
     <header className="border-b border-black/10 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -23,6 +27,16 @@ export default function NavBar() {
           >
             Report a Found Dog
           </Link>
+          {admin && (
+            <form action={logoutAdmin}>
+              <button
+                type="submit"
+                className="rounded-md border border-black/20 px-3 py-1.5 text-black/60 hover:bg-black/5"
+              >
+                Admin: Log out
+              </button>
+            </form>
+          )}
         </nav>
       </div>
     </header>

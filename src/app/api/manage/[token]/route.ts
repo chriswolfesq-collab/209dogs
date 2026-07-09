@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateDogSchema } from "@/lib/validation";
 import { deletePhoto } from "@/lib/storage";
+import { findManagedDog } from "@/lib/manageDog";
 
 export const MANAGE_DOG_SELECT = {
   id: true,
@@ -35,15 +36,12 @@ export const MANAGE_DOG_SELECT = {
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
 
-  const dog = await prisma.dog.findUnique({
-    where: { manageToken: token },
-    select: MANAGE_DOG_SELECT,
-  });
+  const dog = await findManagedDog(req, token, MANAGE_DOG_SELECT);
 
   if (!dog) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -58,7 +56,7 @@ export async function PATCH(
 ) {
   const { token } = await params;
 
-  const dog = await prisma.dog.findUnique({ where: { manageToken: token } });
+  const dog = await findManagedDog(req, token);
   if (!dog) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -108,12 +106,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
 
-  const dog = await prisma.dog.findUnique({ where: { manageToken: token } });
+  const dog = await findManagedDog(req, token);
   if (!dog) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

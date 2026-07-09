@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import ClaimForm from "@/components/ClaimForm";
 import DogDetailMap from "@/components/DogDetailMap";
 import { getBaseUrl } from "@/lib/baseUrl";
+import { isAdmin } from "@/lib/adminAuth";
 import { PUBLIC_DOG_SELECT } from "@/app/api/dogs/[id]/route";
 
 export const dynamic = "force-dynamic";
@@ -70,10 +71,13 @@ export default async function DogDetailPage({
   const { id } = await params;
   const { posted } = await searchParams;
 
-  const dog = await prisma.dog.findUnique({
-    where: { id },
-    select: PUBLIC_DOG_SELECT,
-  });
+  const [dog, admin] = await Promise.all([
+    prisma.dog.findUnique({
+      where: { id },
+      select: PUBLIC_DOG_SELECT,
+    }),
+    isAdmin(),
+  ]);
 
   if (!dog) notFound();
 
@@ -156,6 +160,15 @@ export default async function DogDetailPage({
           >
             Print a flyer for this dog
           </Link>
+
+          {admin && (
+            <Link
+              href={`/manage/${dog.id}`}
+              className="mt-1 block text-sm font-medium text-amber-700 underline hover:no-underline"
+            >
+              Manage this listing (admin)
+            </Link>
+          )}
         </div>
       </div>
 

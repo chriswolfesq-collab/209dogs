@@ -42,6 +42,13 @@ map, submit a claim, get notified, resolve the listing — with minimal setup.
   tab) to upload to Vercel Blob instead — used automatically in production
   since Vercel's filesystem isn't persistent.
 - **Map**: Leaflet + OpenStreetMap tiles, no API key required.
+- **Admin mode**: set `ADMIN_PASSWORD` in `.env` and sign in at
+  [/admin](http://localhost:3000/admin) to edit or delete *any* listing,
+  regardless of who posted it — a "Manage this listing (admin)" link then
+  appears on every dog's detail page, only in your own browser. There's no
+  link to `/admin` anywhere on the site; it's not discoverable unless you
+  navigate there directly. Leave `ADMIN_PASSWORD` unset to disable it
+  entirely.
 - **CAPTCHA**: not wired up yet. Anti-spam for now is a honeypot field plus
   IP-based rate limiting (`src/lib/rateLimit.ts`, in-memory — fine for a
   single instance, swap for Upstash Redis if this ever scales to multiple

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateClaimStatusSchema } from "@/lib/validation";
+import { findManagedDog } from "@/lib/manageDog";
 
 export async function PATCH(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function PATCH(
     );
   }
 
-  const dog = await prisma.dog.findUnique({ where: { manageToken: token } });
+  const dog = await findManagedDog(req, token);
   if (!dog) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
