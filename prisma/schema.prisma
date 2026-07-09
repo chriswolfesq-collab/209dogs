@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum DogStatus {
+  active
+  claim_pending
+  resolved
+  expired
+}
+
+enum HoldingStatus {
+  holding
+  still_loose
+  taken_to_shelter
+}
+
+enum DogSize {
+  small
+  medium
+  large
+}
+
+model Dog {
+  id             String        @id @default(cuid())
+  status         DogStatus     @default(active)
+  photoUrl       String
+  foundLat       Float
+  foundLng       Float
+  foundLocation  String
+  foundDate      DateTime
+  breedGuess     String?
+  size           DogSize?
+  color          String?
+  hasCollar      Boolean       @default(false)
+  collarTagInfo  String?
+  temperament    String?
+  holdingStatus  HoldingStatus @default(holding)
+  notes          String?
+  finderEmail    String
+  manageToken    String        @unique
+  createdAt      DateTime      @default(now())
+  expiresAt      DateTime
+  resolvedAt     DateTime?
+
+  claims         Claim[]
+
+  @@index([status])
+}
+
+enum ClaimStatus {
+  new
+  finder_contacted
+  rejected
+}
+
+model Claim {
+  id              String      @id @default(cuid())
+  dogId           String
+  dog             Dog         @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  claimantName    String
+  claimantContact String
+  proofAnswer     String
+  status          ClaimStatus @default(new)
+  createdAt       DateTime    @default(now())
+
+  @@index([dogId])
+}
+
+model DevEmail {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+}
