@@ -15,7 +15,11 @@ const JPEG_QUALITY = 0.85;
  */
 export async function processImageFile(file: File): Promise<Blob> {
   const orientation = (await readOrientation(file).catch(() => 1)) ?? 1;
-  const bitmap = await createImageBitmap(file);
+  // Some browsers (notably Safari/iOS) auto-rotate the decoded bitmap based
+  // on EXIF orientation while others (Chrome) don't. Forcing "none" here
+  // keeps decoding consistent so the orientation transform below is the only
+  // rotation ever applied, avoiding double-rotated photos on iOS uploads.
+  const bitmap = await createImageBitmap(file, { imageOrientation: "none" });
 
   const swapDimensions = orientation >= 5 && orientation <= 8;
   const srcWidth = bitmap.width;
