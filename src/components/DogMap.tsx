@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L, { type LeafletMouseEvent, type LeafletEvent, type Marker as LeafletMarker } from "leaflet";
 import Link from "next/link";
@@ -41,19 +41,35 @@ function pinIcon(color: string, scale = 1) {
 
 const FOUND_COLOR = "#16a34a";
 const LOST_COLOR = "#dc2626";
-const REUNITED_COLOR = "#6b7280";
+const REUNITED_COLOR = "#2563eb";
 const PICKED_COLOR = "#2563eb";
+const VISITED_COLOR = "#6b7280";
 
 const FOUND_ICON = pinIcon(FOUND_COLOR);
 const LOST_ICON = pinIcon(LOST_COLOR);
 const REUNITED_ICON = pinIcon(REUNITED_COLOR);
 const PICKED_ICON = pinIcon(PICKED_COLOR);
+const VISITED_ICON = pinIcon(VISITED_COLOR);
 
 const FOUND_ICON_LARGE = pinIcon(FOUND_COLOR, 1.35);
 const LOST_ICON_LARGE = pinIcon(LOST_COLOR, 1.35);
 const REUNITED_ICON_LARGE = pinIcon(REUNITED_COLOR, 1.35);
+const VISITED_ICON_LARGE = pinIcon(VISITED_COLOR, 1.35);
 
-function iconForDog(dog: DogPin, highlighted: boolean) {
+const VISITED_STORAGE_KEY = "sfd-visited-dog-ids";
+
+function loadVisitedIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(VISITED_STORAGE_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function iconForDog(dog: DogPin, highlighted: boolean, visited: boolean) {
+  if (visited) return highlighted ? VISITED_ICON_LARGE : VISITED_ICON;
   if (dog.status === "resolved") return highlighted ? REUNITED_ICON_LARGE : REUNITED_ICON;
   if (dog.listingType === "lost") return highlighted ? LOST_ICON_LARGE : LOST_ICON;
   return highlighted ? FOUND_ICON_LARGE : FOUND_ICON;
@@ -111,6 +127,24 @@ export default function DogMap({
   showLegend = false,
   highlightId = null,
 }: Props) {
+  const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setVisitedIds(loadVisitedIds());
+  }, []);
+
+  function markVisited(id: string) {
+    setVisitedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        window.localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
+  }
+
   return (
     <div
       style={{ height, width: "100%" }}
@@ -130,7 +164,8 @@ export default function DogMap({
           <Marker
             key={dog.id}
             position={[dog.foundLat, dog.foundLng]}
-            icon={iconForDog(dog, dog.id === highlightId)}
+            icon={iconForDog(dog, dog.id === highlightId, visitedIds.has(dog.id))}
+            eventHandlers={{ click: () => markVisited(dog.id) }}
           >
             <Popup>
               <Link href={`/dogs/${dog.id}`} className="block w-40">
