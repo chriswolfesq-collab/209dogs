@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { processImageFile } from "@/lib/image";
+import { loadImageForEdit } from "@/lib/image";
+import PhotoCropModal from "@/components/PhotoCropModal";
 
 type Props = {
   value: string | null;
@@ -11,15 +12,25 @@ type Props = {
 export default function PhotoUpload({ value, onChange }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingSrc, setEditingSrc] = useState<string | null>(null);
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
     setError(null);
+    try {
+      const dataUrl = await loadImageForEdit(file);
+      setEditingSrc(dataUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't read that image");
+    }
+  }
+
+  async function handleCropConfirm(blob: Blob) {
+    setEditingSrc(null);
     setUploading(true);
     try {
-      const processed = await processImageFile(file);
       const formData = new FormData();
-      formData.append("file", processed, "photo.jpg");
+      formData.append("file", blob, "photo.jpg");
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
@@ -66,11 +77,22 @@ export default function PhotoUpload({ value, onChange }: Props) {
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             disabled={uploading}
-            onChange={(e) => handleFile(e.target.files?.[0])}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              handleFile(file);
+              e.target.value = "";
+            }}
           />
         </label>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {editingSrc && (
+        <PhotoCropModal
+          imageSrc={editingSrc}
+          onCancel={() => setEditingSrc(null)}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 }
