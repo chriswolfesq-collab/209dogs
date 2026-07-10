@@ -64,7 +64,6 @@ export default function PhotoUpload({ value, onChange }: Props) {
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            capture="environment"
             className="hidden"
             disabled={uploading}
             onChange={(e) => handleFile(e.target.files?.[0])}
