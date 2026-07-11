@@ -13,7 +13,7 @@ export default async function NavBar() {
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/dogs" className="hover:underline">
-            Browse
+            Browse Lost/Found Dogs
           </Link>
           <Link
             href="/dogs/report-lost"
