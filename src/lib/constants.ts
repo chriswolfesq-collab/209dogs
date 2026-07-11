@@ -2,7 +2,13 @@
 // plus the Tuolumne/Calaveras/Amador/Mariposa foothills. The bounds keep
 // pin-dropping and map panning roughly within the region (Dos Palos to
 // Jackson, Mountain House to Yosemite Valley).
-export const REGION_CENTER: [number, number] = [37.7, -120.7];
+//
+// REGION_CENTER is the centroid of the major valley cities (Stockton, Lodi,
+// Tracy, Manteca, Modesto, Turlock, Merced) rather than of REGION_BOUNDS —
+// the geographic bounding box stretches east into the sparsely-listed
+// foothills, so centering on it left the default map view visibly offset
+// from where dogs and searches actually cluster.
+export const REGION_CENTER: [number, number] = [37.72, -121.08];
 export const REGION_BOUNDS: [[number, number], [number, number]] = [
   [36.85, -121.65],
   [38.55, -119.45],
