@@ -5,6 +5,11 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "re
 import L, { type LeafletMouseEvent, type LeafletEvent, type Marker as LeafletMarker } from "leaflet";
 import Link from "next/link";
 import { REGION_CENTER, REGION_BOUNDS, REGION_DEFAULT_ZOOM } from "@/lib/constants";
+import { REGION_CITIES } from "@/lib/cities";
+
+// Close enough to see individual pins/streets within a city without being
+// so tight that a sparsely-covered city looks empty.
+const CITY_FOCUS_ZOOM = 12;
 
 export type DogPin = {
   id: string;
@@ -83,6 +88,7 @@ type Props = {
   height?: string;
   showLegend?: boolean;
   highlightId?: string | null;
+  focusCity?: string;
 };
 
 function LocationPicker({ onPick }: { onPick: (lat: number, lng: number) => void }) {
@@ -115,6 +121,23 @@ function FlyToPicked({
       map.flyTo([position.lat, position.lng], Math.max(map.getZoom(), 15));
     }
   }, [map, position.lat, position.lng, lastMapPickRef]);
+
+  return null;
+}
+
+// Flies to the selected city's centroid, or back out to the full region
+// view when the city filter is cleared.
+function FlyToCity({ city }: { city: string }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const match = city ? REGION_CITIES.find((c) => c.name === city) : null;
+    if (match) {
+      map.flyTo([match.lat, match.lng], CITY_FOCUS_ZOOM);
+    } else {
+      map.flyTo(REGION_CENTER, REGION_DEFAULT_ZOOM);
+    }
+  }, [map, city]);
 
   return null;
 }
@@ -152,6 +175,7 @@ export default function DogMap({
   height = "500px",
   showLegend = false,
   highlightId = null,
+  focusCity = "",
 }: Props) {
   const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
   const lastMapPickRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -234,6 +258,7 @@ export default function DogMap({
             </Popup>
           </Marker>
         ))}
+        <FlyToCity city={focusCity} />
         {onPickLocation && <LocationPicker onPick={handleMapPick} />}
         {pickedLocation && onPickLocation && (
           <PickedMarker position={pickedLocation} onMove={handleMapPick} />

@@ -109,7 +109,7 @@ export default function DogsPage() {
       {isPending && dogs.length === 0 ? (
         <p className="py-12 text-center text-black/40">Loading…</p>
       ) : view === "map" ? (
-        <DogMap dogs={dogs} showLegend />
+        <DogMap dogs={dogs} showLegend focusCity={filters.city} />
       ) : view === "list" ? (
         <DogList dogs={dogs} />
       ) : (
@@ -123,7 +123,13 @@ export default function DogsPage() {
             />
           </div>
           <div className="lg:sticky lg:top-4 lg:self-start">
-            <DogMap dogs={dogs} height="70vh" showLegend highlightId={hoveredId} />
+            <DogMap
+              dogs={dogs}
+              height="70vh"
+              showLegend
+              highlightId={hoveredId}
+              focusCity={filters.city}
+            />
           </div>
         </div>
       )}
