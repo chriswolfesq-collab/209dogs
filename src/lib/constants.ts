@@ -3,12 +3,13 @@
 // pin-dropping and map panning roughly within the region (Dos Palos to
 // Jackson, Mountain House to Yosemite Valley).
 //
-// REGION_CENTER is the centroid of the major valley cities (Stockton, Lodi,
-// Tracy, Manteca, Modesto, Turlock, Merced) rather than of REGION_BOUNDS —
-// the geographic bounding box stretches east into the sparsely-listed
-// foothills, so centering on it left the default map view visibly offset
-// from where dogs and searches actually cluster.
-export const REGION_CENTER: [number, number] = [37.72, -121.08];
+// REGION_CENTER is the centroid of the northern city cluster (Stockton,
+// Lodi, Tracy, Manteca) rather than of REGION_BOUNDS or of all 7 major
+// cities — the geographic bounding box stretches east into the
+// sparsely-listed foothills, and pulling in Modesto/Turlock/Merced skews
+// the center south of where the site's core activity is, so the default
+// map view was visibly offset from where dogs and searches cluster.
+export const REGION_CENTER: [number, number] = [37.9, -121.27];
 export const REGION_BOUNDS: [[number, number], [number, number]] = [
   [36.85, -121.65],
   [38.55, -119.45],
