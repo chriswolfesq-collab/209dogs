@@ -16,8 +16,10 @@ export const REGION_BOUNDS: [[number, number], [number, number]] = [
 // minLon,minLat,maxLon,maxLat — same area as REGION_BOUNDS, reformatted
 // for geocoder APIs (Photon) that expect a flat bbox string.
 export const REGION_BBOX = `${REGION_BOUNDS[0][1]},${REGION_BOUNDS[0][0]},${REGION_BOUNDS[1][1]},${REGION_BOUNDS[1][0]}`;
-// Region-scale default: shows the whole 209 in one view.
-export const REGION_DEFAULT_ZOOM = 9;
+// Region-scale default: framed on the major valley cities rather than the
+// whole 209 bounding box, so the default view reads as a tight cluster of
+// cities instead of a lot of empty foothill space.
+export const REGION_DEFAULT_ZOOM = 10;
 
 export const LISTING_TYPES = ["found", "lost"] as const;
 
