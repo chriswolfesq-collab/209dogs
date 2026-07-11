@@ -204,7 +204,7 @@ export default function DogMap({
   return (
     <div
       style={{ height, width: "100%" }}
-      className="relative overflow-hidden rounded-lg border border-black/10"
+      className="relative isolate overflow-hidden rounded-lg border border-black/10"
     >
       <MapContainer
         center={REGION_CENTER}
