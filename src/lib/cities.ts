@@ -66,6 +66,13 @@ export const CITY_NAMES = REGION_CITIES.map((c) => c.name) as [string, ...string
 
 export const REGION_COUNTIES = [...new Set(REGION_CITIES.map((c) => c.county))];
 
+// The handful of larger cities shown in the browse filter dropdown — the
+// full REGION_CITIES list (~40 towns) is still used for geocoding/city
+// resolution and subscriber alert prefs, just not as filter options.
+const MAJOR_CITY_NAMES = ["Stockton", "Modesto", "Merced", "Tracy", "Turlock", "Manteca", "Lodi"];
+
+export const MAJOR_CITIES = REGION_CITIES.filter((c) => MAJOR_CITY_NAMES.includes(c.name));
+
 const CITY_BY_LOWER_NAME = new Map(REGION_CITIES.map((c) => [c.name.toLowerCase(), c.name]));
 
 export function nearestCity(lat: number, lng: number): string {

@@ -1,6 +1,6 @@
 "use client";
 
-import { REGION_CITIES, REGION_COUNTIES } from "@/lib/cities";
+import { MAJOR_CITIES } from "@/lib/cities";
 
 export type Filters = {
   type: "" | "found" | "lost";
@@ -66,14 +66,10 @@ export default function FilterBar({ filters, onChange }: Props) {
             className="rounded border border-black/20 px-2 py-1 text-sm"
           >
             <option value="">All cities</option>
-            {REGION_COUNTIES.map((county) => (
-              <optgroup key={county} label={`${county} County`}>
-                {REGION_CITIES.filter((c) => c.county === county).map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </optgroup>
+            {MAJOR_CITIES.map((c) => (
+              <option key={c.name} value={c.name}>
+                {c.name}
+              </option>
             ))}
           </select>
         </div>
