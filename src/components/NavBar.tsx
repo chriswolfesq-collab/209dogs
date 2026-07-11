@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { isAdmin } from "@/lib/adminAuth";
 import { logoutAdmin } from "@/lib/adminActions";
+import { NavLink } from "@/components/NavLink";
 
 const NAV_LINKS = [
   { href: "/dogs/report-lost", label: "Report a Lost Dog", variant: "outline" },
   { href: "/dogs/new", label: "Report a Found Dog", variant: "outline" },
-  { href: "/dogs", label: "Browse Lost/Found Dogs", variant: "solid" },
+  { href: "/dogs", label: "Browse Dogs", variant: "solid" },
 ] as const;
 
 function linkClassName(variant: "outline" | "solid") {
@@ -27,9 +29,12 @@ function AdminLogoutButton() {
   );
 }
 
-export default async function NavBar() {
+async function AdminControls() {
   const admin = await isAdmin();
+  return admin ? <AdminLogoutButton /> : null;
+}
 
+export default function NavBar() {
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white">
       <div className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -39,11 +44,13 @@ export default async function NavBar() {
 
         <nav className="hidden items-center gap-3 text-sm sm:flex">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className={linkClassName(link.variant)}>
+            <NavLink key={link.href} href={link.href} className={linkClassName(link.variant)}>
               {link.label}
-            </Link>
+            </NavLink>
           ))}
-          {admin && <AdminLogoutButton />}
+          <Suspense fallback={null}>
+            <AdminControls />
+          </Suspense>
         </nav>
 
         <details className="sm:hidden">
@@ -55,11 +62,13 @@ export default async function NavBar() {
           </summary>
           <div className="absolute right-4 top-full z-50 mt-2 flex w-64 flex-col gap-2 rounded-md border border-black/10 bg-white p-3 text-sm shadow-lg">
             {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className={linkClassName(link.variant)}>
+              <NavLink key={link.href} href={link.href} className={linkClassName(link.variant)}>
                 {link.label}
-              </Link>
+              </NavLink>
             ))}
-            {admin && <AdminLogoutButton />}
+            <Suspense fallback={null}>
+              <AdminControls />
+            </Suspense>
           </div>
         </details>
       </div>
