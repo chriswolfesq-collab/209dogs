@@ -8,7 +8,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-5xl items-center gap-10 px-4 py-16 sm:grid-cols-2 sm:py-20">
           <div className="text-center sm:text-left">
             <h1 className="text-4xl font-semibold tracking-tight">
-              Reuniting Stockton, CA&apos;s dogs with their people
+              Reuniting the 209&apos;s dogs with their people
             </h1>
             <p className="mt-4 max-w-xl text-lg text-black/60">
               Found a dog, or missing one? Post it here in a couple minutes —
@@ -65,7 +65,7 @@ export default function Home() {
           <Step
             emoji="🗺️"
             title="Everyone browses the map"
-            body="Found dogs, lost dogs, and reunited dogs across Stockton, CA, color-coded on a map and list you can filter."
+            body="Found dogs, lost dogs, and reunited dogs across the 209 — from Tracy to Sonora — color-coded on a map and list you can filter."
           />
           <Step
             emoji="💌"

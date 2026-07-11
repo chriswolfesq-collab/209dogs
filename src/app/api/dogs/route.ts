@@ -5,6 +5,7 @@ import { sendEmail, sendEmailBatch, renderEmailHtml, escapeHtml } from "@/lib/em
 import { createDogSchema } from "@/lib/validation";
 import { isRateLimited, getClientIp } from "@/lib/rateLimit";
 import { LISTING_LIFETIME_DAYS } from "@/lib/constants";
+import { CITY_NAMES, resolveCity } from "@/lib/cities";
 import { getBaseUrl } from "@/lib/baseUrl";
 import { findPotentialMatches } from "@/lib/matching";
 
@@ -21,6 +22,7 @@ export const PUBLIC_DOG_LIST_SELECT = {
   foundLat: true,
   foundLng: true,
   foundLocation: true,
+  city: true,
   foundDate: true,
   breedGuess: true,
   size: true,
@@ -36,6 +38,7 @@ export async function GET(req: NextRequest) {
   const size = searchParams.get("size");
   const color = searchParams.get("color");
   const q = searchParams.get("q"); // free text over location description
+  const city = searchParams.get("city"); // exact match against CITY_NAMES
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
   const type = searchParams.get("type"); // "found" | "lost"
@@ -67,6 +70,7 @@ export async function GET(req: NextRequest) {
         : {}),
       ...(color ? { color: { contains: color, mode: "insensitive" } } : {}),
       ...(q ? { foundLocation: { contains: q, mode: "insensitive" } } : {}),
+      ...(city && CITY_NAMES.includes(city) ? { city } : {}),
       ...(parsedDateFrom || parsedDateTo
         ? {
             foundDate: {
@@ -118,6 +122,7 @@ export async function POST(req: NextRequest) {
       foundLat: parsed.data.foundLat,
       foundLng: parsed.data.foundLng,
       foundLocation: parsed.data.foundLocation,
+      city: resolveCity(parsed.data.city, parsed.data.foundLat, parsed.data.foundLng),
       foundDate: new Date(parsed.data.foundDate),
       breedGuess: parsed.data.breedGuess,
       size: parsed.data.size,
@@ -143,8 +148,8 @@ export async function POST(req: NextRequest) {
   await sendEmail({
     to: parsed.data.finderEmail,
     subject: isLost
-      ? "Your lost dog listing on Stockton, CA Found Dogs"
-      : "Your found dog listing on Stockton, CA Found Dogs",
+      ? "Your lost dog listing on 209 Lost & Found Dogs"
+      : "Your found dog listing on 209 Lost & Found Dogs",
     body: `Thanks for posting! Your listing is live at ${listingUrl}.\n\nUse this private link any time to see ${claimsLabel}, mark the dog reunited, or remove the listing:\n${manageUrl}\n\nKeep this link safe — anyone with it can manage your listing. This listing will expire automatically in ${LISTING_LIFETIME_DAYS} days unless you renew it.`,
     html: renderEmailHtml(
       `<p>Thanks for posting! Your listing is live at <a href="${listingUrl}">${listingUrl}</a>.</p>
@@ -203,14 +208,23 @@ export async function POST(req: NextRequest) {
     ]);
   }
 
+  // Empty cities = subscribed to the whole 209; otherwise only alert
+  // subscribers who picked this dog's city.
   const subscribers = await prisma.subscriber.findMany({
-    where: { email: { not: parsed.data.finderEmail }, confirmed: true },
+    where: {
+      email: { not: parsed.data.finderEmail },
+      confirmed: true,
+      OR: [
+        { cities: { isEmpty: true } },
+        ...(dog.city ? [{ cities: { has: dog.city } }] : []),
+      ],
+    },
   });
 
   const dogLabel = dog.dogName || parsed.data.breedGuess || "A dog";
   const alertSubject = isLost
-    ? `Lost dog alert: ${dogLabel} in Stockton, CA`
-    : `Found dog alert: ${dogLabel} in Stockton, CA`;
+    ? `Lost dog alert: ${dogLabel} in ${dog.city ?? "the 209"}`
+    : `Found dog alert: ${dogLabel} in ${dog.city ?? "the 209"}`;
 
   await sendEmailBatch(
     subscribers.map((subscriber) => {

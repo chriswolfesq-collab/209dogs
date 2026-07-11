@@ -41,6 +41,10 @@ model Dog {
   foundLat       Float
   foundLng       Float
   foundLocation  String
+  // Canonical 209 city name (src/lib/cities.ts), derived server-side from
+  // the geocoder hint or nearest-centroid on the coordinates. Nullable only
+  // for rows that predate the field (backfilled by scripts/backfill-city.ts).
+  city           String?
   foundDate      DateTime
   breedGuess     String?
   size           DogSize?
@@ -60,6 +64,7 @@ model Dog {
 
   @@index([status])
   @@index([listingType])
+  @@index([city])
 }
 
 enum ClaimStatus {
@@ -90,6 +95,10 @@ model Subscriber {
   confirmed        Boolean  @default(false)
   confirmToken     String   @unique
   unsubscribeToken String   @unique
+  // Canonical city names (src/lib/cities.ts) this subscriber wants alerts
+  // for. Empty = all cities — also the default for subscribers who signed
+  // up before per-city preferences existed.
+  cities           String[] @default([])
   createdAt        DateTime @default(now())
 }
 

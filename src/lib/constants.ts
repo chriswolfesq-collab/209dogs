@@ -1,13 +1,17 @@
-// Stockton, CA center point and a bounding box loose enough to cover the
-// metro area (Lodi to Manteca) so pin-dropping stays roughly local.
-export const STOCKTON_CENTER: [number, number] = [37.9577, -121.2908];
-export const STOCKTON_BOUNDS: [[number, number], [number, number]] = [
-  [37.75, -121.55],
-  [38.15, -121.05],
+// The 209 area code region: San Joaquin, Stanislaus, and Merced counties
+// plus the Tuolumne/Calaveras/Amador/Mariposa foothills. The bounds keep
+// pin-dropping and map panning roughly within the region (Dos Palos to
+// Jackson, Mountain House to Yosemite Valley).
+export const REGION_CENTER: [number, number] = [37.7, -120.7];
+export const REGION_BOUNDS: [[number, number], [number, number]] = [
+  [36.85, -121.65],
+  [38.55, -119.45],
 ];
-// minLon,minLat,maxLon,maxLat — same area as STOCKTON_BOUNDS, reformatted
+// minLon,minLat,maxLon,maxLat — same area as REGION_BOUNDS, reformatted
 // for geocoder APIs (Photon) that expect a flat bbox string.
-export const STOCKTON_BBOX = `${STOCKTON_BOUNDS[0][1]},${STOCKTON_BOUNDS[0][0]},${STOCKTON_BOUNDS[1][1]},${STOCKTON_BOUNDS[1][0]}`;
+export const REGION_BBOX = `${REGION_BOUNDS[0][1]},${REGION_BOUNDS[0][0]},${REGION_BOUNDS[1][1]},${REGION_BOUNDS[1][0]}`;
+// Region-scale default: shows the whole 209 in one view.
+export const REGION_DEFAULT_ZOOM = 9;
 
 export const LISTING_TYPES = ["found", "lost"] as const;
 

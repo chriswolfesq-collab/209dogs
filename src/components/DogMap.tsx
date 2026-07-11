@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L, { type LeafletMouseEvent, type LeafletEvent, type Marker as LeafletMarker } from "leaflet";
 import Link from "next/link";
-import { STOCKTON_CENTER, STOCKTON_BOUNDS } from "@/lib/constants";
+import { REGION_CENTER, REGION_BOUNDS, REGION_DEFAULT_ZOOM } from "@/lib/constants";
 
 export type DogPin = {
   id: string;
@@ -18,6 +18,7 @@ export type DogPin = {
   status: string;
   listingType?: string;
   dogName?: string | null;
+  city?: string | null;
 };
 
 // Inline SVG pin avoids bundler asset-path issues with Leaflet's default
@@ -93,6 +94,31 @@ function LocationPicker({ onPick }: { onPick: (lat: number, lng: number) => void
   return null;
 }
 
+// At the region-wide default zoom, a pin set from the location autocomplete
+// would be a barely-visible dot — fly the map in on it. Pin drops/drags made
+// directly on the map are recorded in lastMapPickRef by the caller, so this
+// only flies for locations that came from outside the map.
+function FlyToPicked({
+  position,
+  lastMapPickRef,
+}: {
+  position: { lat: number; lng: number };
+  lastMapPickRef: React.RefObject<{ lat: number; lng: number } | null>;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const fromMap =
+      lastMapPickRef.current?.lat === position.lat &&
+      lastMapPickRef.current?.lng === position.lng;
+    if (!fromMap) {
+      map.flyTo([position.lat, position.lng], Math.max(map.getZoom(), 15));
+    }
+  }, [map, position.lat, position.lng, lastMapPickRef]);
+
+  return null;
+}
+
 function PickedMarker({
   position,
   onMove,
@@ -128,10 +154,16 @@ export default function DogMap({
   highlightId = null,
 }: Props) {
   const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
+  const lastMapPickRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     setVisitedIds(loadVisitedIds());
   }, []);
+
+  function handleMapPick(lat: number, lng: number) {
+    lastMapPickRef.current = { lat, lng };
+    onPickLocation?.(lat, lng);
+  }
 
   function markVisited(id: string) {
     setVisitedIds((prev) => {
@@ -151,9 +183,9 @@ export default function DogMap({
       className="relative overflow-hidden rounded-lg border border-black/10"
     >
       <MapContainer
-        center={STOCKTON_CENTER}
-        zoom={12}
-        maxBounds={STOCKTON_BOUNDS}
+        center={REGION_CENTER}
+        zoom={REGION_DEFAULT_ZOOM}
+        maxBounds={REGION_BOUNDS}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
@@ -180,7 +212,12 @@ export default function DogMap({
                   {dog.dogName && dog.breedGuess ? ` · ${dog.breedGuess}` : ""}
                   {dog.color ? `, ${dog.color}` : ""}
                 </div>
-                <div className="text-xs text-black/60">{dog.foundLocation}</div>
+                <div className="text-xs text-black/60">
+                  {dog.foundLocation}
+                  {dog.city && !dog.foundLocation.toLowerCase().includes(dog.city.toLowerCase())
+                    ? ` · ${dog.city}`
+                    : ""}
+                </div>
                 {dog.status === "resolved" ? (
                   <div className="mt-1 text-xs font-medium text-neutral-600">Reunited 🎉</div>
                 ) : dog.status === "claim_pending" ? (
@@ -197,12 +234,15 @@ export default function DogMap({
             </Popup>
           </Marker>
         ))}
-        {onPickLocation && <LocationPicker onPick={onPickLocation} />}
+        {onPickLocation && <LocationPicker onPick={handleMapPick} />}
         {pickedLocation && onPickLocation && (
-          <PickedMarker position={pickedLocation} onMove={onPickLocation} />
+          <PickedMarker position={pickedLocation} onMove={handleMapPick} />
         )}
         {pickedLocation && !onPickLocation && (
           <Marker position={[pickedLocation.lat, pickedLocation.lng]} icon={PICKED_ICON} />
+        )}
+        {pickedLocation && onPickLocation && (
+          <FlyToPicked position={pickedLocation} lastMapPickRef={lastMapPickRef} />
         )}
       </MapContainer>
       {showLegend && (

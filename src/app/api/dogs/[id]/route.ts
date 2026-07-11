@@ -14,6 +14,7 @@ export const PUBLIC_DOG_SELECT = {
   foundLat: true,
   foundLng: true,
   foundLocation: true,
+  city: true,
   foundDate: true,
   breedGuess: true,
   size: true,

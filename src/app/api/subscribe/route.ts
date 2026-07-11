@@ -29,11 +29,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Re-submitting the form is also how an existing subscriber changes their
+  // city preferences, so cities is written on both branches.
   const subscriber = await prisma.subscriber.upsert({
     where: { email: parsed.data.email },
-    update: {},
+    update: { cities: parsed.data.cities },
     create: {
       email: parsed.data.email,
+      cities: parsed.data.cities,
       confirmToken: nanoid(32),
       unsubscribeToken: nanoid(32),
     },
@@ -48,12 +51,17 @@ export async function POST(req: NextRequest) {
   const baseUrl = getBaseUrl();
   const confirmUrl = `${baseUrl}/subscribe/confirm/${subscriber.confirmToken}`;
 
+  const coverage =
+    parsed.data.cities.length > 0
+      ? `in ${parsed.data.cities.join(", ")}`
+      : "anywhere in the 209";
+
   await sendEmail({
     to: parsed.data.email,
-    subject: "Confirm your Stockton, CA Found Dogs alerts",
-    body: `Someone (hopefully you) asked to get emailed whenever a new lost or found dog is posted on Stockton, CA Found Dogs.\n\nConfirm your subscription:\n${confirmUrl}\n\nIf this wasn't you, just ignore this email — you won't be subscribed.`,
+    subject: "Confirm your 209 Lost & Found Dogs alerts",
+    body: `Someone (hopefully you) asked to get emailed whenever a new lost or found dog is posted ${coverage} on 209 Lost & Found Dogs.\n\nConfirm your subscription:\n${confirmUrl}\n\nIf this wasn't you, just ignore this email — you won't be subscribed.`,
     html: renderEmailHtml(
-      `<p>Someone (hopefully you) asked to get emailed whenever a new lost or found dog is posted on Stockton, CA Found Dogs.</p>
+      `<p>Someone (hopefully you) asked to get emailed whenever a new lost or found dog is posted ${coverage} on 209 Lost &amp; Found Dogs.</p>
 <p><a href="${confirmUrl}">Confirm your subscription</a></p>
 <p>If this wasn't you, just ignore this email — you won't be subscribed.</p>`
     ),

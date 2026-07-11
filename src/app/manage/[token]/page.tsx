@@ -281,6 +281,9 @@ function EditDogForm({
     lat: dog.foundLat,
     lng: dog.foundLng,
   });
+  // City hint from the autocomplete; null means the server derives the city
+  // from the coordinates on save (it re-resolves on every edit anyway).
+  const [pickedCity, setPickedCity] = useState<string | null>(null);
   const [foundLocation, setFoundLocation] = useState(dog.foundLocation);
   const [foundDate, setFoundDate] = useState(dog.foundDate.slice(0, 10));
   const [dogName, setDogName] = useState(dog.dogName ?? "");
@@ -298,6 +301,7 @@ function EditDogForm({
 
   function handleSelectSuggestion(suggestion: LocationSuggestion) {
     setLocation({ lat: suggestion.lat, lng: suggestion.lng });
+    setPickedCity(suggestion.city ?? null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -323,6 +327,7 @@ function EditDogForm({
           foundLat: location.lat,
           foundLng: location.lng,
           foundLocation,
+          city: pickedCity || undefined,
           foundDate,
           breedGuess: breedGuess || null,
           size: size || null,
@@ -377,13 +382,16 @@ function EditDogForm({
             value={foundLocation}
             onChangeText={setFoundLocation}
             onSelect={handleSelectSuggestion}
-            placeholder="e.g. Stockton Courthouse, or Louis Park"
+            placeholder="e.g. Louis Park in Stockton, or Modesto Courthouse"
           />
           <div className="mt-2">
             <DogMap
               dogs={[]}
               height="250px"
-              onPickLocation={(lat, lng) => setLocation({ lat, lng })}
+              onPickLocation={(lat, lng) => {
+                setLocation({ lat, lng });
+                setPickedCity(null);
+              }}
               pickedLocation={location}
             />
           </div>

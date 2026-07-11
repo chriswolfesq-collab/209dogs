@@ -36,7 +36,7 @@ const COPY: Record<
       "Your contact info is never shown publicly. If someone claims this dog, we'll email you their contact info so you can reach out directly.",
     photoLabel: "Photo",
     locationLabel: "Where did you find the dog?",
-    locationPlaceholder: "e.g. Stockton Courthouse, or Louis Park",
+    locationPlaceholder: "e.g. Louis Park in Stockton, or Modesto Courthouse",
     dateLabel: "Date found",
     submitLabel: "Post Listing",
     submittingLabel: "Posting…",
@@ -47,7 +47,7 @@ const COPY: Record<
       "Your contact info is never shown publicly. If someone spots your dog, we'll email you their contact info so you can connect directly.",
     photoLabel: "Photo of your dog",
     locationLabel: "Where did you last see your dog?",
-    locationPlaceholder: "e.g. Stockton Courthouse, or Louis Park",
+    locationPlaceholder: "e.g. Louis Park in Stockton, or Modesto Courthouse",
     dateLabel: "Date last seen",
     submitLabel: "Post Lost Dog Listing",
     submittingLabel: "Posting…",
@@ -60,6 +60,9 @@ export default function ListingForm({ listingType }: { listingType: ListingType 
 
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  // City hint from the autocomplete; cleared when the pin is moved by hand
+  // so the server derives the city from the coordinates instead.
+  const [pickedCity, setPickedCity] = useState<string | null>(null);
   const [foundLocation, setFoundLocation] = useState("");
   const [foundDate, setFoundDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [dogName, setDogName] = useState("");
@@ -79,6 +82,7 @@ export default function ListingForm({ listingType }: { listingType: ListingType 
 
   function handleSelectSuggestion(suggestion: LocationSuggestion) {
     setLocation({ lat: suggestion.lat, lng: suggestion.lng });
+    setPickedCity(suggestion.city ?? null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -106,6 +110,7 @@ export default function ListingForm({ listingType }: { listingType: ListingType 
           foundLat: location.lat,
           foundLng: location.lng,
           foundLocation,
+          city: pickedCity || undefined,
           foundDate,
           breedGuess: breedGuess || undefined,
           size: size || undefined,
@@ -174,7 +179,10 @@ export default function ListingForm({ listingType }: { listingType: ListingType 
             <DogMap
               dogs={[]}
               height="250px"
-              onPickLocation={(lat, lng) => setLocation({ lat, lng })}
+              onPickLocation={(lat, lng) => {
+                setLocation({ lat, lng });
+                setPickedCity(null);
+              }}
               pickedLocation={location}
             />
           </div>

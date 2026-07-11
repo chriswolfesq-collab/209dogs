@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateDogSchema } from "@/lib/validation";
+import { resolveCity } from "@/lib/cities";
 import { deletePhoto } from "@/lib/storage";
 import { findManagedDog } from "@/lib/manageDog";
 
@@ -13,6 +14,7 @@ export const MANAGE_DOG_SELECT = {
   foundLat: true,
   foundLng: true,
   foundLocation: true,
+  city: true,
   foundDate: true,
   breedGuess: true,
   size: true,
@@ -89,6 +91,8 @@ export async function PATCH(
       foundLat: parsed.data.foundLat,
       foundLng: parsed.data.foundLng,
       foundLocation: parsed.data.foundLocation,
+      // Re-derived on every edit — the pin may have moved cities.
+      city: resolveCity(parsed.data.city, parsed.data.foundLat, parsed.data.foundLng),
       foundDate: new Date(parsed.data.foundDate),
       breedGuess: parsed.data.breedGuess,
       size: parsed.data.size,

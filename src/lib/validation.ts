@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CITY_NAMES } from "@/lib/cities";
 
 // Shared by create/update: must parse to a real date and can't be in the
 // future (allowing a day of slack for timezone differences between the
@@ -19,6 +20,9 @@ export const createDogSchema = z.object({
   foundLat: z.number().min(-90).max(90),
   foundLng: z.number().min(-180).max(180),
   foundLocation: z.string().min(3, "Describe the location").max(300),
+  // Geocoder city hint only — the server normalizes it against the
+  // canonical list (resolveCity), so a stale/unknown value never rejects.
+  city: z.string().max(100).optional(),
   foundDate: foundDateSchema,
   breedGuess: z.string().max(100).optional(),
   size: z.enum(["small", "medium", "large"]).optional(),
@@ -47,6 +51,9 @@ export const updateDogSchema = z.object({
   foundLat: z.number().min(-90).max(90),
   foundLng: z.number().min(-180).max(180),
   foundLocation: z.string().min(3, "Describe the location").max(300),
+  // Same hint semantics as createDogSchema; re-resolved on every edit since
+  // the pin may have moved.
+  city: z.string().max(100).optional(),
   foundDate: foundDateSchema,
   breedGuess: z.string().max(100).nullable().optional(),
   size: z.enum(["small", "medium", "large"]).nullable().optional(),
@@ -74,6 +81,8 @@ export const updateClaimStatusSchema = z.object({
 
 export const subscribeSchema = z.object({
   email: z.string().email("Enter a valid email").max(254),
+  // Cities to get alerts for; empty means the whole 209.
+  cities: z.array(z.enum(CITY_NAMES)).max(CITY_NAMES.length).optional().default([]),
   // Honeypot: real users never fill this in; bots often do.
   website: z.string().max(0).optional(),
 });

@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { STOCKTON_BBOX, STOCKTON_CENTER } from "@/lib/constants";
+import { REGION_BBOX, REGION_CENTER } from "@/lib/constants";
 
 export type LocationSuggestion = {
   label: string;
   lat: number;
   lng: number;
+  // City name hint from the geocoder, if it returned one. Only a hint —
+  // the server normalizes it against the canonical list (src/lib/cities.ts).
+  city?: string;
 };
 
 type PhotonFeature = {
@@ -18,8 +21,20 @@ type PhotonFeature = {
     city?: string;
     state?: string;
     postcode?: string;
+    osm_key?: string;
+    osm_value?: string;
   };
 };
+
+// When the user picks a city/town itself (typing just "Lodi"), Photon puts
+// the name in properties.name with no properties.city — treat the place's
+// own name as the city in that case.
+function isPlaceFeature(p: PhotonFeature["properties"]) {
+  return (
+    p.osm_key === "place" &&
+    ["city", "town", "village", "hamlet"].includes(p.osm_value ?? "")
+  );
+}
 
 function formatSuggestion(feature: PhotonFeature): LocationSuggestion {
   const p = feature.properties;
@@ -28,7 +43,8 @@ function formatSuggestion(feature: PhotonFeature): LocationSuggestion {
   const parts = [p.name, p.name ? streetLine || null : streetLine, p.city, p.state].filter(
     (part, i, arr) => Boolean(part) && arr.indexOf(part) === i
   );
-  return { label: parts.join(", "), lat, lng };
+  const city = p.city ?? (isPlaceFeature(p) ? p.name : undefined);
+  return { label: parts.join(", "), lat, lng, city };
 }
 
 type Props = {
@@ -70,10 +86,10 @@ export default function LocationAutocomplete({
       try {
         const params = new URLSearchParams({
           q: value,
-          lat: String(STOCKTON_CENTER[0]),
-          lon: String(STOCKTON_CENTER[1]),
+          lat: String(REGION_CENTER[0]),
+          lon: String(REGION_CENTER[1]),
           limit: "6",
-          bbox: STOCKTON_BBOX,
+          bbox: REGION_BBOX,
         });
         const res = await fetch(`https://photon.komoot.io/api/?${params}`, {
           signal: controller.signal,

@@ -44,6 +44,7 @@ export default function DogsPage() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     if (filters.type) params.set("type", filters.type);
+    if (filters.city) params.set("city", filters.city);
     if (filters.size) params.set("size", filters.size);
     if (debouncedColor) params.set("color", debouncedColor);
     if (debouncedQ) params.set("q", debouncedQ);
@@ -81,7 +82,7 @@ export default function DogsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Lost &amp; Found Dogs in Stockton, CA</h1>
+        <h1 className="text-2xl font-semibold">Lost &amp; Found Dogs in the 209</h1>
         <div className="flex items-center gap-3">
           <div className="flex rounded-lg border border-black/10 bg-white p-1">
             {(["split", "map", "list"] as const).map((v) => (

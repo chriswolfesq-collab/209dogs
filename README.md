@@ -1,6 +1,8 @@
-# Stockton Found Dogs
+# 209 Lost & Found Dogs
 
-A community site for reporting and reuniting found dogs in Stockton, CA.
+A community site for reporting and reuniting lost and found dogs across the
+209 area code region of California — San Joaquin, Stanislaus, and Merced
+counties plus the Tuolumne, Calaveras, Amador, and Mariposa foothills.
 Finders post a photo, location, and details; the public browses a map or
 list of unclaimed dogs; claimants submit a proof-of-ownership form; the
 finder gets notified by email and reaches out directly. No accounts, no

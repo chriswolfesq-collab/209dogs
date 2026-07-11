@@ -19,6 +19,7 @@ export default async function FlyerPage({
       dogName: true,
       photoUrl: true,
       foundLocation: true,
+      city: true,
       foundDate: true,
       breedGuess: true,
       size: true,
@@ -56,6 +57,7 @@ export default async function FlyerPage({
             label={isLost ? "Last seen near" : "Found near"}
             value={dog.foundLocation}
           />
+          {dog.city && <FlyerRow label="City" value={dog.city} />}
           <FlyerRow
             label={isLost ? "Date last seen" : "Date found"}
             value={new Date(dog.foundDate).toLocaleDateString()}

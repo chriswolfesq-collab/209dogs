@@ -24,6 +24,7 @@ export async function generateMetadata({
       breedGuess: true,
       photoUrl: true,
       foundLocation: true,
+      city: true,
       listingType: true,
     },
   });
@@ -33,11 +34,12 @@ export async function generateMetadata({
   const isLost = dog.listingType === "lost";
   const label = dog.dogName || dog.breedGuess || "A dog";
   const title = isLost
-    ? `Lost dog: ${label} — Stockton, CA Found Dogs`
-    : `Found dog: ${label} — Stockton, CA Found Dogs`;
+    ? `Lost dog: ${label} — 209 Lost & Found Dogs`
+    : `Found dog: ${label} — 209 Lost & Found Dogs`;
+  const place = dog.city ? `${dog.foundLocation} in ${dog.city}` : dog.foundLocation;
   const description = isLost
-    ? `Last seen near ${dog.foundLocation}. Have you seen this dog?`
-    : `Found near ${dog.foundLocation}. Is this your dog?`;
+    ? `Last seen near ${place}. Have you seen this dog?`
+    : `Found near ${place}. Is this your dog?`;
 
   const baseUrl = getBaseUrl();
   const imageUrl = dog.photoUrl.startsWith("http") ? dog.photoUrl : `${baseUrl}${dog.photoUrl}`;
@@ -137,6 +139,7 @@ export default async function DogDetailPage({
           <dl className="space-y-1 text-sm">
             {dog.dogName && <Row label="Breed" value={dog.breedGuess ?? "Unknown"} />}
             <Row label={isLost ? "Last seen near" : "Found near"} value={dog.foundLocation} />
+            {dog.city && <Row label="City" value={dog.city} />}
             <Row
               label={isLost ? "Date last seen" : "Date found"}
               value={new Date(dog.foundDate).toLocaleDateString()}

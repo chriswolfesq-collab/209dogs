@@ -7,6 +7,7 @@ export type DogSummary = {
   dogName?: string | null;
   photoUrl: string;
   foundLocation: string;
+  city?: string | null;
   foundDate: string;
   breedGuess?: string | null;
   size?: string | null;
@@ -68,7 +69,14 @@ export default function DogCard({ dog, active = false }: { dog: DogSummary; acti
             .filter(Boolean)
             .join(" · ") || "No description"}
         </div>
-        <div className="text-sm text-black/60">{dog.foundLocation}</div>
+        <div className="text-sm text-black/60">
+          {dog.foundLocation}
+          {/* Skip the city when the free-text location already names it,
+              e.g. "Louis Park, Stockton, California" */}
+          {dog.city && !dog.foundLocation.toLowerCase().includes(dog.city.toLowerCase())
+            ? ` · ${dog.city}`
+            : ""}
+        </div>
         <div className="mt-auto text-xs text-black/40">
           {dog.listingType === "lost" ? "Last seen" : "Found"}{" "}
           {new Date(dog.foundDate).toLocaleDateString()}

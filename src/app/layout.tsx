@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stockton, CA Found Dogs",
+  title: "209 Lost & Found Dogs",
   description:
-    "Report a found dog, browse found dogs on a map, and reunite pets with their owners in Stockton, CA.",
+    "Report a lost or found dog, browse listings on a map, and reunite pets with their owners across the 209 — Stockton, Lodi, Tracy, Manteca, Modesto, Turlock, Merced, and the Sierra foothills.",
 };
 
 export default function RootLayout({

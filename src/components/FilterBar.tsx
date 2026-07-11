@@ -1,7 +1,10 @@
 "use client";
 
+import { REGION_CITIES, REGION_COUNTIES } from "@/lib/cities";
+
 export type Filters = {
   type: "" | "found" | "lost";
+  city: string;
   size: string;
   color: string;
   q: string;
@@ -13,6 +16,7 @@ export type Filters = {
 
 export const EMPTY_FILTERS: Filters = {
   type: "",
+  city: "",
   size: "",
   color: "",
   q: "",
@@ -55,12 +59,31 @@ export default function FilterBar({ filters, onChange }: Props) {
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
+          <label className="text-xs text-black/60">City</label>
+          <select
+            value={filters.city}
+            onChange={(e) => set("city", e.target.value)}
+            className="rounded border border-black/20 px-2 py-1 text-sm"
+          >
+            <option value="">All cities</option>
+            {REGION_COUNTIES.map((county) => (
+              <optgroup key={county} label={`${county} County`}>
+                {REGION_CITIES.filter((c) => c.county === county).map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
           <label className="text-xs text-black/60">Search location</label>
           <input
             type="text"
             value={filters.q}
             onChange={(e) => set("q", e.target.value)}
-            placeholder="e.g. Louis Park, Miracle Mile"
+            placeholder="e.g. Louis Park, or Main St"
             className="w-48 rounded border border-black/20 px-2 py-1 text-sm"
           />
         </div>
