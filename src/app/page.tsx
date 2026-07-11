@@ -19,22 +19,22 @@ export default function Home() {
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:justify-start">
               <Link
-                href="/dogs"
-                className="rounded-md bg-amber-500 px-6 py-3 font-medium text-white hover:bg-amber-600"
-              >
-                Browse Lost/Found Dogs
-              </Link>
-              <Link
-                href="/dogs/new"
-                className="rounded-md bg-neutral-900 px-6 py-3 font-medium text-white hover:bg-neutral-700"
-              >
-                Report a Found Dog
-              </Link>
-              <Link
                 href="/dogs/report-lost"
                 className="rounded-md border border-black/20 px-6 py-3 font-medium hover:bg-black/5"
               >
                 Report a Lost Dog
+              </Link>
+              <Link
+                href="/dogs/new"
+                className="rounded-md border border-black/20 px-6 py-3 font-medium hover:bg-black/5"
+              >
+                Report a Found Dog
+              </Link>
+              <Link
+                href="/dogs"
+                className="rounded-md bg-neutral-900 px-6 py-3 font-medium text-white hover:bg-neutral-700"
+              >
+                Browse Lost/Found Dogs
               </Link>
             </div>
           </div>

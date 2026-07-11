@@ -12,9 +12,6 @@ export default async function NavBar() {
           🐾 209 Lost &amp; Found Dogs
         </Link>
         <nav className="flex items-center gap-3 text-sm">
-          <Link href="/dogs" className="hover:underline">
-            Browse Lost/Found Dogs
-          </Link>
           <Link
             href="/dogs/report-lost"
             className="rounded-md border border-black/20 px-3 py-1.5 hover:bg-black/5"
@@ -23,9 +20,15 @@ export default async function NavBar() {
           </Link>
           <Link
             href="/dogs/new"
-            className="rounded-md bg-neutral-900 px-3 py-1.5 text-white hover:bg-neutral-700"
+            className="rounded-md border border-black/20 px-3 py-1.5 hover:bg-black/5"
           >
             Report a Found Dog
+          </Link>
+          <Link
+            href="/dogs"
+            className="rounded-md bg-neutral-900 px-3 py-1.5 text-white hover:bg-neutral-700"
+          >
+            Browse Lost/Found Dogs
           </Link>
           {admin && (
             <form action={logoutAdmin}>
