@@ -66,6 +66,9 @@ export const updateDogSchema = z.object({
 });
 
 export const createClaimSchema = z.object({
+  // "claim" = ownership claim (found) / sighting (lost); "tip" = general
+  // info for the finder/owner, no ownership asserted.
+  kind: z.enum(["claim", "tip"]).default("claim"),
   claimantName: z.string().min(1, "Name is required").max(100),
   claimantContact: z.string().min(3, "Phone or email is required").max(200),
   proofAnswer: z

@@ -56,12 +56,22 @@ export async function GET(req: NextRequest) {
 
   const dogs = await prisma.dog.findMany({
     where: {
-      status: {
-        in: includeReunited
-          ? ["active", "claim_pending", "resolved"]
-          : ["active", "claim_pending"],
-      },
-      expiresAt: { gt: new Date() },
+      // Resolved (reunited) listings are permanent success stories — they're
+      // exempt from the 30-day expiry that hides everything else.
+      ...(includeReunited
+        ? {
+            OR: [
+              {
+                status: { in: ["active", "claim_pending"] as const },
+                expiresAt: { gt: new Date() },
+              },
+              { status: "resolved" as const },
+            ],
+          }
+        : {
+            status: { in: ["active", "claim_pending"] as const },
+            expiresAt: { gt: new Date() },
+          }),
       ...(type && ["found", "lost"].includes(type)
         ? { listingType: type as "found" | "lost" }
         : {}),

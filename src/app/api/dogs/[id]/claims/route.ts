@@ -34,7 +34,7 @@ export async function POST(
   }
   if (dog.status === "resolved" || dog.status === "expired" || dog.expiresAt <= new Date()) {
     return NextResponse.json(
-      { error: "This listing is no longer accepting claims." },
+      { error: "This listing is no longer accepting messages." },
       { status: 400 }
     );
   }
@@ -44,16 +44,21 @@ export async function POST(
     return NextResponse.json({ ok: true }, { status: 201 });
   }
 
+  const isTip = parsed.data.kind === "tip";
+
   await prisma.claim.create({
     data: {
       dogId: dog.id,
       claimantName: parsed.data.claimantName,
       claimantContact: parsed.data.claimantContact,
       proofAnswer: parsed.data.proofAnswer,
+      kind: parsed.data.kind,
     },
   });
 
-  if (dog.status === "active") {
+  // Tips don't assert ownership, so they never move the listing to
+  // claim_pending.
+  if (dog.status === "active" && !isTip) {
     await prisma.dog.update({
       where: { id: dog.id },
       data: { status: "claim_pending" },
@@ -68,6 +73,26 @@ export async function POST(
   const claimantContact = escapeHtml(parsed.data.claimantContact);
   const proofAnswer = escapeHtml(parsed.data.proofAnswer);
   const dogLabel = escapeHtml(dog.dogName || "the dog");
+
+  if (isTip) {
+    await sendEmail({
+      to: dog.finderEmail,
+      subject: isLost
+        ? `Someone sent a tip about ${dog.dogName || "your dog"}`
+        : "Someone sent a tip about the dog you found",
+      body: `${parsed.data.claimantName} sent a tip about ${
+        isLost ? dog.dogName || "your dog" : "the dog you found"
+      }.\n\nTheir contact info: ${parsed.data.claimantContact}\n\nWhat they said:\n"${parsed.data.proofAnswer}"\n\nReview all messages and manage your listing here:\n${manageUrl}\n\nThis person isn't claiming the dog — they just wanted to pass along information.`,
+      html: renderEmailHtml(
+        `<p>${claimantName} sent a tip about ${isLost ? dogLabel : "the dog you found"}.</p>
+<p>Their contact info: <strong>${claimantContact}</strong></p>
+<p>What they said:<br>&ldquo;${proofAnswer}&rdquo;</p>
+<p><a href="${manageUrl}">Review all messages and manage your listing</a></p>
+<p>This person isn&rsquo;t claiming the dog &mdash; they just wanted to pass along information.</p>`
+      ),
+    });
+    return NextResponse.json({ ok: true }, { status: 201 });
+  }
 
   await sendEmail({
     to: dog.finderEmail,

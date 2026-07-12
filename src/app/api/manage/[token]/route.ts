@@ -4,6 +4,7 @@ import { updateDogSchema } from "@/lib/validation";
 import { resolveCity } from "@/lib/cities";
 import { deletePhoto } from "@/lib/storage";
 import { findManagedDog } from "@/lib/manageDog";
+import { isAdminRequest } from "@/lib/adminAuth";
 
 export const MANAGE_DOG_SELECT = {
   id: true,
@@ -32,6 +33,7 @@ export const MANAGE_DOG_SELECT = {
       claimantContact: true,
       proofAnswer: true,
       status: true,
+      kind: true,
       createdAt: true,
     },
   },
@@ -49,7 +51,7 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ dog });
+  return NextResponse.json({ dog, admin: isAdminRequest(req) });
 }
 
 export async function PATCH(
@@ -118,6 +120,15 @@ export async function DELETE(
   const dog = await findManagedDog(req, token);
   if (!dog) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Reunited listings are permanent success stories; only an admin can
+  // remove one (privacy escape hatch — e.g. personal info in the photo).
+  if (dog.status === "resolved" && !isAdminRequest(req)) {
+    return NextResponse.json(
+      { error: "Reunited listings are kept as a permanent record and can't be deleted." },
+      { status: 403 }
+    );
   }
 
   await prisma.dog.delete({ where: { id: dog.id } });

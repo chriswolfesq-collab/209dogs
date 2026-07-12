@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ClaimForm from "@/components/ClaimForm";
+import TipForm from "@/components/TipForm";
 import DogDetailMap from "@/components/DogDetailMap";
 import { getBaseUrl } from "@/lib/baseUrl";
 import { isAdmin } from "@/lib/adminAuth";
@@ -185,8 +186,9 @@ export default async function DogDetailPage({
       </div>
 
       {dog.status !== "resolved" && dog.status !== "expired" ? (
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           <ClaimForm dogId={dog.id} listingType={dog.listingType} dogName={dog.dogName} />
+          <TipForm dogId={dog.id} listingType={dog.listingType} dogName={dog.dogName} />
         </div>
       ) : (
         <p className="mt-6 rounded-lg border border-black/10 bg-white p-4 text-sm text-black/60">

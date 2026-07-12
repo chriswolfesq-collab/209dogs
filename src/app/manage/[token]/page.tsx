@@ -21,6 +21,7 @@ type Claim = {
   claimantContact: string;
   proofAnswer: string;
   status: string;
+  kind: string;
   createdAt: string;
 };
 
@@ -58,6 +59,7 @@ export default function ManageDogPage({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
     fetch(`/api/manage/${token}`)
@@ -65,12 +67,19 @@ export default function ManageDogPage({
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Listing not found");
         setDog(data.dog);
+        setAdmin(Boolean(data.admin));
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Listing not found"))
       .finally(() => setLoading(false));
   }, [token]);
 
   async function handleResolve() {
+    if (
+      !confirm(
+        "Mark this dog as reunited? The listing will stay on the site permanently as a success story, and you won't be able to delete it."
+      )
+    )
+      return;
     setBusy(true);
     try {
       const res = await fetch(`/api/manage/${token}/resolve`, { method: "POST" });
@@ -192,17 +201,27 @@ export default function ManageDogPage({
             Mark as Reunited
           </button>
         )}
-        <button
-          onClick={handleDelete}
-          disabled={busy}
-          className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-        >
-          Delete Listing
-        </button>
+        {(dog.status !== "resolved" || admin) && (
+          <button
+            onClick={handleDelete}
+            disabled={busy}
+            className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            Delete Listing
+          </button>
+        )}
       </div>
 
+      {dog.status === "resolved" && !admin && (
+        <p className="mb-6 text-sm text-black/60">
+          Reunited listings stay on the site permanently as a success story, so they can no
+          longer be deleted.
+        </p>
+      )}
+
       <h2 className="mb-3 font-semibold">
-        {isLost ? "Sightings" : "Claims"} {dog.claims.length > 0 ? `(${dog.claims.length})` : ""}
+        {isLost ? "Sightings & Tips" : "Claims & Tips"}{" "}
+        {dog.claims.length > 0 ? `(${dog.claims.length})` : ""}
       </h2>
 
       {dog.claims.length === 0 ? (
@@ -214,7 +233,14 @@ export default function ManageDogPage({
           {dog.claims.map((claim) => (
             <div key={claim.id} className="rounded-lg border border-black/10 bg-white p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">{claim.claimantName}</span>
+                <span className="font-medium">
+                  {claim.claimantName}
+                  {claim.kind === "tip" && (
+                    <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                      Tip
+                    </span>
+                  )}
+                </span>
                 <div className="flex items-center gap-2">
                   <ClaimStatusBadge status={claim.status} />
                   <span className="text-xs text-black/40">

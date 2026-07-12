@@ -73,14 +73,21 @@ enum ClaimStatus {
   rejected
 }
 
+enum ClaimKind {
+  claim // "this is my dog" (found listing) / sighting (lost listing)
+  tip // general info for the finder/owner; no ownership asserted
+}
+
 model Claim {
   id              String      @id @default(cuid())
   dogId           String
   dog             Dog         @relation(fields: [dogId], references: [id], onDelete: Cascade)
   claimantName    String
   claimantContact String
+  // For kind=tip, proofAnswer holds the tip message.
   proofAnswer     String
   status          ClaimStatus @default(new)
+  kind            ClaimKind   @default(claim)
   createdAt       DateTime    @default(now())
 
   @@index([dogId])
